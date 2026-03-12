@@ -77,15 +77,34 @@ def encode_features(df):
     return df, type_encoder, trigger_encoder
 
 
-def build_observation_sequences(df, group_by="country_name"):
+def build_observation_sequences(df, group_by="country_name", use_combined=False):
     """
-    Build per-country temporal sequences for HMM. Observation = type_code.
-    Returns (obs_sequences, lengths, group_labels)
+    Build per-country temporal sequences for HMM.
+
+    Args:
+        df:            Encoded dataframe (must have type_code + trigger_code columns).
+        group_by:      Grouping column (default: country_name).
+        use_combined:  If True, observation = type_code * n_triggers + trigger_code
+                       (combined multi-feature symbol). If False, uses type_code only.
+
+    Returns:
+        (obs_sequences, lengths, group_labels)
     """
     df_sorted = df.sort_values([group_by, "year", "month"])
     obs_sequences, lengths, group_labels = [], [], []
+
+    if use_combined:
+        n_triggers = df["trigger_code"].max() + 1
+        df_sorted = df_sorted.copy()
+        df_sorted["obs_code"] = (
+            df_sorted["type_code"] * int(n_triggers) + df_sorted["trigger_code"]
+        ).astype(int)
+        obs_col = "obs_code"
+    else:
+        obs_col = "type_code"
+
     for name, grp in df_sorted.groupby(group_by):
-        seq = grp["type_code"].values.astype(int)
+        seq = grp[obs_col].values.astype(int)
         if len(seq) >= 2:
             obs_sequences.append(seq)
             lengths.append(len(seq))
@@ -93,6 +112,9 @@ def build_observation_sequences(df, group_by="country_name"):
     total = sum(lengths)
     print(f"\nBuilt {len(obs_sequences)} sequences | Total: {total} obs | "
           f"min={min(lengths)} max={max(lengths)} mean={total/len(lengths):.1f}")
+    if use_combined:
+        n_types = df["type_code"].max() + 1
+        print(f"Combined symbols: {n_types} types × {n_triggers} triggers = {int(n_types * n_triggers)}")
     return obs_sequences, lengths, group_labels
 
 

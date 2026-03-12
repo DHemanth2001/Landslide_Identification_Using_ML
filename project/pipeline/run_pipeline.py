@@ -22,6 +22,7 @@ from tqdm import tqdm
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from phase1_alexnet.predict import load_alexnet_model, predict_single_image
+from phase1_alexnet.ensemble_predict import load_ensemble, predict_ensemble
 from phase1_alexnet.train import run_training
 from phase2_hmm.data_preprocessing import (
     load_glc_data,
@@ -58,10 +59,9 @@ class LandslideIdentificationPipeline:
     ):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # Load Phase 1 model
-        ckpt = alexnet_checkpoint or config.ALEXNET_CHECKPOINT
-        print(f"Loading AlexNet from {ckpt} ...")
-        self.alexnet, _ = load_alexnet_model(ckpt, self.device)
+        # Load Phase 1 ensemble (EfficientNet-B3 + AlexNet pretrained)
+        print("Loading Phase 1 ensemble (EfficientNet-B3 + AlexNet) ...")
+        self.effnet, self.alexnet, _ = load_ensemble(self.device)
 
         # Load Phase 2 model + risk profile
         hmm_path = hmm_model_path or config.HMM_MODEL_PATH
@@ -103,8 +103,8 @@ class LandslideIdentificationPipeline:
         Returns:
             Unified result dict.
         """
-        # ── Phase 1: Image classification ────────────────────────────────────
-        phase1_result = predict_single_image(image_path, self.alexnet, self.device)
+        # ── Phase 1: Ensemble classification ─────────────────────────────────
+        phase1_result = predict_ensemble(image_path, self.effnet, self.alexnet, self.device)
 
         # Support legacy 'location' arg as country
         effective_country = country or location
@@ -258,10 +258,12 @@ class LandslideIdentificationPipeline:
 
 # ─── Training helpers ─────────────────────────────────────────────────────────
 
-def train_phase1(pretrained: bool = False) -> None:
-    """Train AlexNet and save best checkpoint."""
-    print("=== Training Phase 1: AlexNet ===")
-    model, history = run_training(pretrained=pretrained)
+def train_phase1(pretrained: bool = False, model_name: str = None) -> None:
+    """Train Phase 1 model and save best checkpoint."""
+    if model_name is None:
+        model_name = config.ACTIVE_MODEL
+    print(f"=== Training Phase 1: {model_name} ===")
+    model, history = run_training(pretrained=pretrained, model_name=model_name)
     plot_training_history(
         history,
         save_path=os.path.join(config.PLOTS_DIR, "training_history.png"),
@@ -270,16 +272,24 @@ def train_phase1(pretrained: bool = False) -> None:
 
 def train_phase2() -> None:
     """Train HMM on NASA GLC records and save model + encoder."""
+    import joblib
     print("\n=== Training Phase 2: HMM (NASA GLC) ===")
     df = load_glc_data()
-    df_enc, type_enc, _ = encode_features(df)
-    seqs, lengths, _ = build_observation_sequences(df_enc)
-    n_symbols = len(type_enc.classes_)
+    df_enc, type_enc, trig_enc = encode_features(df)
+    use_combined = config.HMM_USE_COMBINED_OBS
+    seqs, lengths, _ = build_observation_sequences(df_enc, use_combined=use_combined)
 
-    model = build_hmm(n_symbols=n_symbols)
+    n_types = len(type_enc.classes_)
+    n_triggers = int(df_enc["trigger_code"].max() + 1)
+    n_symbols = n_types * n_triggers if use_combined else n_types
+
+    model = build_hmm(n_symbols=int(n_symbols))
     model = train_hmm(model, seqs, lengths)
     save_hmm_model(model)
     save_encoder(type_enc)
+    joblib.dump(trig_enc, config.HMM_TRIGGER_ENCODER_PATH)
+    joblib.dump({"use_combined": use_combined, "n_types": n_types, "n_triggers": n_triggers},
+                os.path.join(config.CHECKPOINTS_DIR, "hmm_meta.pkl"))
     print("Phase 2 training complete.")
 
 
@@ -302,7 +312,7 @@ def main():
     args = parser.parse_args()
 
     if args.mode == "train":
-        train_phase1(pretrained=args.pretrained)
+        train_phase1(pretrained=args.pretrained, model_name=config.ACTIVE_MODEL)
         train_phase2()
         print("\nBoth models trained successfully.")
 

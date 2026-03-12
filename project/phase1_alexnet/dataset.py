@@ -86,8 +86,11 @@ def get_train_transforms() -> A.Compose:
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.3),
             A.RandomRotate90(p=0.3),
-            A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1, hue=0.05, p=0.5),
+            A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, hue=0.05, p=0.5),
             A.GaussianBlur(blur_limit=(3, 5), p=0.2),
+            A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.4),
+            A.GridDistortion(num_steps=5, distort_limit=0.2, p=0.2),
+            A.CoarseDropout(max_holes=8, max_height=16, max_width=16, fill_value=0, p=0.2),
             A.Normalize(mean=config.NORMALIZE_MEAN, std=config.NORMALIZE_STD),
             ToTensorV2(),
         ]
@@ -108,7 +111,7 @@ def get_test_transforms() -> A.Compose:
 def get_dataloaders(
     processed_dir: str = None,
     batch_size: int = None,
-    num_workers: int = 2,
+    num_workers: int = 4,
     use_weighted_sampler: bool = True,
 ):
     """

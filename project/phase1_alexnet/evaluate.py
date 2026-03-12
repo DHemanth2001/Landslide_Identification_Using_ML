@@ -15,10 +15,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from phase1_alexnet.dataset import LandslideDataset, get_dataloaders, get_test_transforms
 from torch.utils.data import DataLoader
-from phase1_alexnet.model import get_model
+from phase1_alexnet.model import get_model, get_efficientnet_b3
 from phase1_alexnet.train import load_checkpoint
 from utils.metrics import compute_metrics, print_metrics
 from utils.plot_utils import plot_confusion_matrix, plot_roc_curve, plot_training_history
+from utils.temperature_scaling import fit_temperature, save_temperature
 
 
 def evaluate_model(model, test_loader, device: torch.device) -> dict:
@@ -88,7 +89,11 @@ def run_evaluation(
         Evaluation results dict.
     """
     if checkpoint_path is None:
-        checkpoint_path = config.ALEXNET_CHECKPOINT
+        checkpoint_path = (
+            config.EFFICIENTNET_CHECKPOINT
+            if config.ACTIVE_MODEL == "efficientnet_b3"
+            else config.ALEXNET_CHECKPOINT
+        )
     if processed_dir is None:
         processed_dir = config.PROCESSED_DATA_DIR
     if plots_dir is None:
@@ -96,16 +101,38 @@ def run_evaluation(
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = get_model(num_classes=config.NUM_CLASSES)
-    model = model.to(device)
-    load_checkpoint(checkpoint_path, model)
+    # Load model matching the active architecture
+    for model_fn in [
+        lambda: get_efficientnet_b3(num_classes=config.NUM_CLASSES),
+        lambda: get_model(pretrained=True, num_classes=config.NUM_CLASSES),
+        lambda: get_model(pretrained=False, num_classes=config.NUM_CLASSES),
+    ]:
+        try:
+            model = model_fn()
+            model = model.to(device)
+            load_checkpoint(checkpoint_path, model)
+            break
+        except RuntimeError:
+            continue
+
+    # Fit temperature scaling on val set
+    val_dataset = LandslideDataset(processed_dir, "val", get_test_transforms())
+    val_loader = DataLoader(val_dataset, batch_size=config.BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
+    scaler = fit_temperature(model, val_loader, device)
+    save_temperature(scaler.temperature.item())
 
     # Use dedicated test split for final evaluation
     test_dataset = LandslideDataset(processed_dir, "test", get_test_transforms())
-    test_loader = DataLoader(test_dataset, batch_size=config.BATCH_SIZE, shuffle=False, num_workers=2)
+    test_loader = DataLoader(test_dataset, batch_size=config.BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
 
+    print("\n--- Raw (uncalibrated) model ---")
     results = evaluate_model(model, test_loader, device)
     print_classification_report(results)
+
+    print("\n--- Temperature-calibrated model ---")
+    results_cal = evaluate_model(scaler, test_loader, device)
+    print_classification_report(results_cal)
+    results["calibrated"] = results_cal
 
     # Save plots
     plot_confusion_matrix(

@@ -115,14 +115,22 @@ if __name__ == "__main__":
     )
     df = load_glc_data()
     df_enc, type_enc, trig_enc = encode_features(df)
-    seqs, lengths, labels = build_observation_sequences(df_enc)
-    n_symbols = len(type_enc.classes_)
+    use_combined = config.HMM_USE_COMBINED_OBS
+    seqs, lengths, labels = build_observation_sequences(df_enc, use_combined=use_combined)
 
-    model = build_hmm(n_symbols=n_symbols)
+    if use_combined:
+        n_symbols = len(type_enc.classes_) * (df_enc["trigger_code"].max() + 1)
+    else:
+        n_symbols = len(type_enc.classes_)
+
+    model = build_hmm(n_symbols=int(n_symbols))
     model = train_hmm(model, seqs, lengths)
     print_model_parameters(model, list(type_enc.classes_))
     save_hmm_model(model)
     save_encoder(type_enc)
-    joblib.dump(trig_enc,
-                os.path.join(config.CHECKPOINTS_DIR, "hmm_trigger_encoder.pkl"))
+    joblib.dump(trig_enc, config.HMM_TRIGGER_ENCODER_PATH)
+    joblib.dump({"use_combined": use_combined,
+                 "n_types": len(type_enc.classes_),
+                 "n_triggers": int(df_enc["trigger_code"].max() + 1)},
+                os.path.join(config.CHECKPOINTS_DIR, "hmm_meta.pkl"))
     print("All saved.")

@@ -14,7 +14,7 @@ from tqdm import tqdm
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from phase1_alexnet.dataset import get_dataloaders
-from phase1_alexnet.model import get_model
+from phase1_alexnet.model import get_model, get_efficientnet_b3
 
 
 def train_one_epoch(
@@ -93,6 +93,7 @@ def run_training(
     learning_rate: float = None,
     pretrained: bool = False,
     processed_dir: str = None,
+    model_name: str = None,
 ) -> tuple:
     """
     Full training pipeline.
@@ -103,6 +104,7 @@ def run_training(
         learning_rate: Adam learning rate.
         pretrained:    Whether to use ImageNet pretrained weights.
         processed_dir: Path to data/processed/ directory.
+        model_name:    'alexnet' or 'efficientnet_b3'. Defaults to config.ACTIVE_MODEL.
 
     Returns:
         (trained_model, history_dict)
@@ -116,9 +118,12 @@ def run_training(
         learning_rate = config.LEARNING_RATE
     if processed_dir is None:
         processed_dir = config.PROCESSED_DATA_DIR
+    if model_name is None:
+        model_name = config.ACTIVE_MODEL
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
+    print(f"Model: {model_name}")
 
     # Data
     train_loader, val_loader = get_dataloaders(
@@ -131,7 +136,12 @@ def run_training(
         )
 
     # Model
-    model = get_model(pretrained=pretrained, num_classes=config.NUM_CLASSES)
+    if model_name == "efficientnet_b3":
+        model = get_efficientnet_b3(num_classes=config.NUM_CLASSES)
+        checkpoint_path = config.EFFICIENTNET_CHECKPOINT
+    else:
+        model = get_model(pretrained=pretrained, num_classes=config.NUM_CLASSES)
+        checkpoint_path = config.ALEXNET_CHECKPOINT
     model = model.to(device)
 
     # Optimizer, loss, scheduler
@@ -141,7 +151,7 @@ def run_training(
         weight_decay=1e-4,
     )
     criterion = nn.CrossEntropyLoss()
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=1e-7)
 
     history = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}
     best_val_acc = 0.0
@@ -149,6 +159,29 @@ def run_training(
 
     print(f"\nStarting training for {num_epochs} epochs...\n")
     for epoch in range(1, num_epochs + 1):
+        # Unfreeze feature layers after UNFREEZE_EPOCH for full fine-tuning
+        if epoch == config.UNFREEZE_EPOCH + 1:
+            for param in model.parameters():
+                param.requires_grad = True
+            # Features get 10x lower LR than the head
+            if model_name == "efficientnet_b3":
+                head_params = [p for n, p in model.named_parameters() if "classifier" in n]
+                feat_params = [p for n, p in model.named_parameters() if "classifier" not in n]
+            else:
+                head_params = [p for n, p in model.named_parameters() if "classifier" in n]
+                feat_params = [p for n, p in model.named_parameters() if "classifier" not in n]
+            optimizer = optim.Adam(
+                [
+                    {"params": feat_params, "lr": learning_rate * 0.1},
+                    {"params": head_params, "lr": learning_rate},
+                ],
+                weight_decay=1e-4,
+            )
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(
+                optimizer, T_max=num_epochs - epoch, eta_min=1e-7
+            )
+            print(f"  --> Epoch {epoch}: Unfroze all layers for full fine-tuning")
+
         train_loss, train_acc = train_one_epoch(model, train_loader, optimizer, criterion, device)
         val_loss, val_acc = validate(model, val_loader, criterion, device)
         scheduler.step()
@@ -161,13 +194,12 @@ def run_training(
         print(
             f"Epoch [{epoch:>3}/{num_epochs}]  "
             f"Train Loss: {train_loss:.4f}  Train Acc: {train_acc:.4f}  "
-            f"Val Loss: {val_loss:.4f}  Val Acc: {val_acc:.4f}  "
-            f"LR: {scheduler.get_last_lr()[0]:.2e}"
+            f"Val Loss: {val_loss:.4f}  Val Acc: {val_acc:.4f}"
         )
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
-            save_checkpoint(model, optimizer, epoch, val_acc, config.ALEXNET_CHECKPOINT)
+            save_checkpoint(model, optimizer, epoch, val_acc, checkpoint_path)
             print(f"  --> Best model saved (val_acc={val_acc:.4f})")
 
     print(f"\nTraining complete. Best validation accuracy: {best_val_acc:.4f}")

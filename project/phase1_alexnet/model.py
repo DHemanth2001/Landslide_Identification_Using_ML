@@ -1,6 +1,6 @@
 """
-AlexNet architecture for landslide binary image classification.
-Input: 227x227x3 RGB images
+CNN architectures for landslide binary image classification.
+Supports AlexNet (227x227) and EfficientNet-B3 (300x300).
 Output: logits for [non_landslide, landslide]
 """
 
@@ -99,4 +99,29 @@ def get_model(pretrained: bool = False, num_classes: int = 2, dropout: float = 0
 
     model = AlexNet(num_classes=num_classes, dropout=dropout)
     print(f"Initialized AlexNet from scratch (num_classes={num_classes}).")
+    return model
+
+
+def get_efficientnet_b3(num_classes: int = 2, freeze_epochs: int = 5) -> nn.Module:
+    """
+    EfficientNet-B3 pretrained on ImageNet, with classifier head replaced.
+    Feature layers frozen initially — call unfreeze_features() after warm-up.
+
+    Args:
+        num_classes: Number of output classes.
+        freeze_epochs: Informational only; caller controls unfreezing.
+
+    Returns:
+        EfficientNet-B3 model instance.
+    """
+    import torchvision.models as models
+
+    model = models.efficientnet_b3(weights=models.EfficientNet_B3_Weights.IMAGENET1K_V1)
+    # Freeze all feature layers for warm-up phase
+    for param in model.features.parameters():
+        param.requires_grad = False
+    # Replace classifier head: EfficientNet-B3 has 1536 features in
+    in_features = model.classifier[1].in_features
+    model.classifier[1] = nn.Linear(in_features, num_classes)
+    print(f"Loaded pretrained EfficientNet-B3 with replaced classifier head (in={in_features}, out={num_classes}).")
     return model

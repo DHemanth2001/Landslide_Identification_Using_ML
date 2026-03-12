@@ -24,7 +24,7 @@ Run the following command in your terminal:
 Step 2 — Install dependencies
 
     conda activate landslide-ml
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
     pip install hmmlearn scikit-learn pandas numpy opencv-python albumentations tqdm joblib openpyxl torchinfo matplotlib seaborn
 
 If the environment already exists from a previous session, skip the above and just activate it:
@@ -219,7 +219,11 @@ Problem: conda command not found.
 Solution: Add conda to your PATH by running: export PATH="$HOME/miniconda3/bin:$PATH"
 
 Problem: GPU not detected, using CPU.
-Solution: This is normal. The project runs on CPU automatically if no GPU is available. Training will be slower but will still work correctly.
+Solution: Ensure you installed the CUDA-enabled version of PyTorch (cu124). If your CUDA version differs, replace cu124 with the appropriate version (e.g., cu118 for CUDA 11.8). Verify GPU availability with:
+
+    conda run -n landslide-ml python -c "import torch; print(torch.cuda.is_available())"
+
+If it prints False, check your NVIDIA drivers and CUDA toolkit installation.
 
 Problem: HMM shows "Loaded 0 records".
 Solution: The file data/excel/nasa_glc.csv may be missing or corrupted. Re-download it with this command:

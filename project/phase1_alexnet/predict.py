@@ -13,21 +13,44 @@ import torch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from phase1_alexnet.dataset import get_test_transforms
-from phase1_alexnet.model import get_model
+from phase1_alexnet.model import get_model, get_efficientnet_b3
 from phase1_alexnet.train import load_checkpoint
+from utils.temperature_scaling import TemperatureScaler, load_temperature
 
 
 def load_alexnet_model(checkpoint_path: str = None, device: torch.device = None):
     """Load AlexNet from checkpoint, return (model, device)."""
     if checkpoint_path is None:
-        checkpoint_path = config.ALEXNET_CHECKPOINT
+        checkpoint_path = (
+            config.EFFICIENTNET_CHECKPOINT
+            if config.ACTIVE_MODEL == "efficientnet_b3"
+            else config.ALEXNET_CHECKPOINT
+        )
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = get_model(num_classes=config.NUM_CLASSES)
-    model = model.to(device)
-    load_checkpoint(checkpoint_path, model)
+    # Try each architecture until one matches the checkpoint
+    for model_fn in [
+        lambda: get_efficientnet_b3(num_classes=config.NUM_CLASSES),
+        lambda: get_model(pretrained=True, num_classes=config.NUM_CLASSES),
+        lambda: get_model(pretrained=False, num_classes=config.NUM_CLASSES),
+    ]:
+        try:
+            model = model_fn()
+            model = model.to(device)
+            load_checkpoint(checkpoint_path, model)
+            break
+        except RuntimeError:
+            continue
     model.eval()
+    # Apply temperature scaling if a calibration file exists
+    T = load_temperature()
+    if T != 1.0:
+        scaler = TemperatureScaler(model)
+        scaler.temperature = torch.nn.Parameter(torch.tensor([T]))
+        scaler = scaler.to(device)
+        scaler.eval()
+        return scaler, device
     return model, device
 
 

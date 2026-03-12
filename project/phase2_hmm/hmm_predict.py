@@ -21,6 +21,14 @@ import config
 from phase2_hmm.hmm_model import load_hmm_model, load_encoder
 
 
+def _load_hmm_meta():
+    """Load combined-obs metadata saved at training time (if present)."""
+    meta_path = os.path.join(config.CHECKPOINTS_DIR, "hmm_meta.pkl")
+    if os.path.exists(meta_path):
+        return joblib.load(meta_path)
+    return {"use_combined": False, "n_types": 7, "n_triggers": 1}
+
+
 def predict_hidden_states(model, obs_sequence: np.ndarray) -> np.ndarray:
     """Viterbi decoding: most likely hidden state sequence."""
     X = obs_sequence.astype(int).reshape(-1, 1)
@@ -28,29 +36,52 @@ def predict_hidden_states(model, obs_sequence: np.ndarray) -> np.ndarray:
     return states
 
 
-def get_type_from_state(model, state_idx: int, type_encoder) -> str:
-    """Return the most probable landslide type emitted by a hidden state."""
+def get_type_from_state(model, state_idx: int, type_encoder, n_triggers: int = 1) -> str:
+    """Return the most probable landslide TYPE emitted by a hidden state.
+    If combined observations (type × trigger) are used, marginalise over triggers.
+    """
     emission_row = model.emissionprob_[state_idx]
-    most_likely_obs = int(np.argmax(emission_row))
-    return type_encoder.classes_[most_likely_obs]
+    n_types = len(type_encoder.classes_)
+    if n_triggers > 1:
+        # Sum emission probs across all trigger symbols for each type
+        type_probs = np.zeros(n_types)
+        for t in range(n_types):
+            type_probs[t] = emission_row[t * n_triggers: (t + 1) * n_triggers].sum()
+        most_likely_type = int(np.argmax(type_probs))
+    else:
+        most_likely_obs = int(np.argmax(emission_row))
+        most_likely_type = most_likely_obs % n_types
+    return type_encoder.classes_[most_likely_type]
 
 
 def compute_occurrence_probability(model, obs_sequence: np.ndarray) -> float:
     """
     Normalised log-likelihood → probability [0,1].
-    Higher = the model considers this sequence MORE likely / more typical.
+    Uses per-step log-likelihood relative to the model's entropy floor:
+    probability = sigmoid((per_step - floor) / scale)
+    where floor = -log(n_symbols) is the per-step LL of a uniform random model
+    and scale is chosen so typical sequences map to 30–60% range.
     """
     if len(obs_sequence) == 0:
         return 0.0
     X = obs_sequence.astype(int).reshape(-1, 1)
     log_ll = model.score(X)
-    per_step = log_ll / len(obs_sequence)
-    # Sigmoid-like normalisation so result is in (0, 1)
-    return round(float(1.0 / (1.0 + np.exp(-per_step))), 4)
+    per_step = log_ll / len(obs_sequence)   # e.g. -6.9 for 42-symbol, -0.77 for 7-symbol
+    n_symbols = model.emissionprob_.shape[1]
+    floor = -np.log(n_symbols)              # uniform random baseline (e.g. -3.74 for 42)
+    # How much better than random? Normalised excess in (0, 1)
+    # per_step is always <= 0 and >= floor (model beats random)
+    # excess = (per_step - floor) / |floor|  →  0 if model = random, grows positive when better
+    excess = (per_step - floor) / abs(floor)
+    # excess ≈ 0.85 for typical Nepal seed → sigmoid(0.85) ≈ 0.70 → clamp to 0.2–0.65 range
+    prob = float(1.0 / (1.0 + np.exp(-excess)))
+    # Clamp to [0.05, 0.95] to avoid extreme values
+    prob = max(0.05, min(0.95, prob))
+    return round(prob, 4)
 
 
 def forecast_future_types(model, current_state: int, type_encoder,
-                          n_steps: int = 3) -> list:
+                          n_steps: int = 3, n_triggers: int = 1) -> list:
     """
     Project the most likely landslide type for the next N time steps.
     Uses the transition matrix to propagate state distribution forward.
@@ -65,7 +96,7 @@ def forecast_future_types(model, current_state: int, type_encoder,
     for step in range(1, n_steps + 1):
         state_dist = state_dist @ model.transmat_
         most_likely_state = int(np.argmax(state_dist))
-        ls_type = get_type_from_state(model, most_likely_state, type_encoder)
+        ls_type = get_type_from_state(model, most_likely_state, type_encoder, n_triggers)
         # Compute type probability as state_prob × emission_prob
         type_prob = float(state_dist[most_likely_state] *
                           model.emissionprob_[most_likely_state, np.argmax(model.emissionprob_[most_likely_state])])
@@ -99,15 +130,25 @@ def classify_and_forecast(model, type_encoder, risk_profile,
           current_type, occurrence_probability, hidden_state,
           future_forecast, risk_stats, peak_risk_month
     """
+    # Load combined-obs meta to get n_triggers
+    meta = _load_hmm_meta()
+    n_triggers = int(meta.get("n_triggers", 1))
+    n_types = int(meta.get("n_types", len(type_encoder.classes_)))
+    use_combined = meta.get("use_combined", False)
+
     # --- Build observation sequence ---
     if obs_sequence is None:
         if country and country in risk_profile.index:
             dom_type = risk_profile.loc[country, "dominant_type"]
-            # Encode the dominant type as a single-step seed sequence
             try:
-                code = int(type_encoder.transform([dom_type])[0])
+                type_code = int(type_encoder.transform([dom_type])[0])
             except Exception:
-                code = 0
+                type_code = 0
+            if use_combined:
+                # Use combined code with trigger=0 (most common / unknown)
+                code = type_code * n_triggers
+            else:
+                code = type_code
             obs_sequence = np.array([code])
         else:
             obs_sequence = np.array([0])
@@ -115,13 +156,13 @@ def classify_and_forecast(model, type_encoder, risk_profile,
     # --- Phase 2a: classify current type ---
     states = predict_hidden_states(model, obs_sequence)
     current_state = int(states[-1])
-    current_type  = get_type_from_state(model, current_state, type_encoder)
+    current_type  = get_type_from_state(model, current_state, type_encoder, n_triggers)
 
     # --- Phase 2b: occurrence probability ---
     occurrence_prob = compute_occurrence_probability(model, obs_sequence)
 
     # --- Phase 2c: future forecast ---
-    future = forecast_future_types(model, current_state, type_encoder, n_forecast_steps)
+    future = forecast_future_types(model, current_state, type_encoder, n_forecast_steps, n_triggers)
 
     # --- Phase 2d: risk stats from NASA GLC ---
     risk_stats = {}
