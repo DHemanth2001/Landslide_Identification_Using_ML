@@ -14,9 +14,6 @@ project/data/train*.npy
 project/data/val*.npy
 project/data/test*.npy
 
-# Processed image dataset (generated - too large for git)
-project/data/processed/
-
 # Model checkpoints (large binary files)
 project/checkpoints/*.pth
 project/checkpoints/*.pkl
