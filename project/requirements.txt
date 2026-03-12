@@ -9,3 +9,7 @@ openpyxl
 opencv-python
 albumentations
 numpy
+hmmlearn
+torchinfo
+tqdm
+joblib

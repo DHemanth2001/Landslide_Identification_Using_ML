@@ -1,0 +1,33 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pycache
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Large binary data files (numpy arrays - too large for git)
+project/data/*.npy
+project/data/train*.npy
+project/data/val*.npy
+project/data/test*.npy
+
+# Processed image dataset (generated - too large for git)
+project/data/processed/
+
+# Model checkpoints (large binary files)
+project/checkpoints/*.pth
+project/checkpoints/*.pkl
+
+# Scratch/temp files in excel folder
+project/data/excel/glc_page.html
+project/data/excel/test.json
+
+# Claude internal settings
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
