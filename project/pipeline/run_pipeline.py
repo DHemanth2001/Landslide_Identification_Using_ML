@@ -24,21 +24,25 @@ import config
 from phase1_alexnet.predict import load_alexnet_model, predict_single_image
 from phase1_alexnet.ensemble_predict import load_ensemble, predict_ensemble
 from phase1_alexnet.train import run_training
-from phase2_hmm.data_preprocessing import (
-    load_glc_data,
-    encode_features,
-    build_observation_sequences,
-    get_country_risk_profile,
-)
-from phase2_hmm.hmm_model import (
-    build_hmm,
-    load_encoder,
-    load_hmm_model,
-    save_encoder,
-    save_hmm_model,
-    train_hmm,
-)
-from phase2_hmm.hmm_predict import classify_and_forecast, format_phase2_output
+try:
+    from phase2_hmm.data_preprocessing import (
+        load_glc_data,
+        encode_features,
+        build_observation_sequences,
+        get_country_risk_profile,
+    )
+    from phase2_hmm.hmm_model import (
+        build_hmm,
+        load_encoder,
+        load_hmm_model,
+        save_encoder,
+        save_hmm_model,
+        train_hmm,
+    )
+    from phase2_hmm.hmm_predict import classify_and_forecast, format_phase2_output
+    HMM_AVAILABLE = True
+except ImportError:
+    HMM_AVAILABLE = False
 from utils.plot_utils import plot_training_history
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
@@ -59,23 +63,26 @@ class LandslideIdentificationPipeline:
     ):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # Load Phase 1 ensemble (EfficientNet-B3 + AlexNet pretrained)
-        print("Loading Phase 1 ensemble (EfficientNet-B3 + AlexNet) ...")
-        self.effnet, self.alexnet, _ = load_ensemble(self.device)
+        # Load Phase 1 ensemble (EfficientNet-B3 + ViT-B/16)
+        print("Loading Phase 1 ensemble (EfficientNet-B3 + ViT-B/16) ...")
+        self.effnet, self.vit_model, _ = load_ensemble(self.device)
 
         # Load Phase 2 model + risk profile
-        hmm_path = hmm_model_path or config.HMM_MODEL_PATH
-        enc_path = hmm_encoder_path or config.HMM_ENCODER_PATH
-        print(f"Loading HMM from {hmm_path} ...")
-        self.hmm = load_hmm_model(hmm_path)
-        self.type_encoder = load_encoder(enc_path)
+        if HMM_AVAILABLE:
+            hmm_path = hmm_model_path or config.HMM_MODEL_PATH
+            enc_path = hmm_encoder_path or config.HMM_ENCODER_PATH
+            print(f"Loading HMM from {hmm_path} ...")
+            self.hmm = load_hmm_model(hmm_path)
+            self.type_encoder = load_encoder(enc_path)
 
-        # Build risk profile from NASA GLC for per-country stats
-        print("Loading NASA GLC risk profiles ...")
-        df = load_glc_data()
-        df_enc, _, _ = encode_features(df)
-        self.risk_profile = get_country_risk_profile(df_enc)
-        print(f"Risk profiles loaded for {len(self.risk_profile)} countries.\n")
+            # Build risk profile from NASA GLC for per-country stats
+            print("Loading NASA GLC risk profiles ...")
+            df = load_glc_data()
+            df_enc, _, _ = encode_features(df)
+            self.risk_profile = get_country_risk_profile(df_enc)
+            print(f"Risk profiles loaded for {len(self.risk_profile)} countries.\n")
+        else:
+            print("HMM not available, skipping Phase 2 loading.\n")
 
         print("Pipeline ready.\n")
 
@@ -104,7 +111,7 @@ class LandslideIdentificationPipeline:
             Unified result dict.
         """
         # ── Phase 1: Ensemble classification ─────────────────────────────────
-        phase1_result = predict_ensemble(image_path, self.effnet, self.alexnet, self.device)
+        phase1_result = predict_ensemble(image_path, self.effnet, self.vit_model, self.device)
 
         # Support legacy 'location' arg as country
         effective_country = country or location
@@ -121,40 +128,46 @@ class LandslideIdentificationPipeline:
             phase1_result["label"] == "landslide"
             and phase1_result["confidence"] >= config.PHASE1_THRESHOLD
         ):
-            p2 = classify_and_forecast(
-                self.hmm,
-                self.type_encoder,
-                self.risk_profile,
-                country=effective_country,
-                obs_sequence=obs_sequence,
-                n_forecast_steps=n_forecast_steps,
-            )
-            # Flatten for legacy consumers
-            p2_flat = {
-                "landslide_type":        p2["current_type"],
-                "occurrence_probability": p2["occurrence_probability"],
-                "hidden_state":          p2["hidden_state"],
-                "peak_risk_month":       p2["peak_risk_month"],
-                "future_forecast":       p2["future_forecast"],
-                "risk_stats":            p2["risk_stats"],
-                "country":               p2["country"],
-                # Legacy key for notebook 05 compatibility
-                "next_event_forecast": [
-                    {
-                        "most_likely_state": f["landslide_type"],
-                        "probability":       f["probability"],
-                        "step":              f["step"],
-                    }
-                    for f in p2["future_forecast"]
-                ],
-            }
-            result["phase2"] = p2_flat
-            prob_pct = int(p2["occurrence_probability"] * 100)
-            result["final_verdict"] = (
-                f"LANDSLIDE DETECTED — "
-                f"Type: {p2['current_type']} "
-                f"(occurrence probability: {prob_pct}%)"
-            )
+            if HMM_AVAILABLE:
+                p2 = classify_and_forecast(
+                    self.hmm,
+                    self.type_encoder,
+                    self.risk_profile,
+                    country=effective_country,
+                    obs_sequence=obs_sequence,
+                    n_forecast_steps=n_forecast_steps,
+                )
+                # Flatten for legacy consumers
+                p2_flat = {
+                    "landslide_type":        p2["current_type"],
+                    "occurrence_probability": p2["occurrence_probability"],
+                    "hidden_state":          p2["hidden_state"],
+                    "peak_risk_month":       p2["peak_risk_month"],
+                    "future_forecast":       p2["future_forecast"],
+                    "risk_stats":            p2["risk_stats"],
+                    "country":               p2["country"],
+                    # Legacy key for notebook 05 compatibility
+                    "next_event_forecast": [
+                        {
+                            "most_likely_state": f["landslide_type"],
+                            "probability":       f["probability"],
+                            "step":              f["step"],
+                        }
+                        for f in p2["future_forecast"]
+                    ],
+                }
+                result["phase2"] = p2_flat
+                prob_pct = int(p2["occurrence_probability"] * 100)
+                result["final_verdict"] = (
+                    f"LANDSLIDE DETECTED — "
+                    f"Type: {p2['current_type']} "
+                    f"(occurrence probability: {prob_pct}%)"
+                )
+            else:
+                result["final_verdict"] = (
+                    f"LANDSLIDE DETECTED — "
+                    f"Phase 2 HMM offline. Confidence: {int(phase1_result['confidence']*100)}%"
+                )
         else:
             conf_pct = int(phase1_result["confidence"] * 100)
             result["final_verdict"] = (

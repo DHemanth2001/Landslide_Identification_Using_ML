@@ -125,3 +125,27 @@ def get_efficientnet_b3(num_classes: int = 2, freeze_epochs: int = 5) -> nn.Modu
     model.classifier[1] = nn.Linear(in_features, num_classes)
     print(f"Loaded pretrained EfficientNet-B3 with replaced classifier head (in={in_features}, out={num_classes}).")
     return model
+
+
+def get_vit_b_16(num_classes: int = 2) -> nn.Module:
+    """
+    Vision Transformer (ViT-B/16) pretrained on ImageNet.
+    In torchvision, the classification head is accessed via model.heads.head.
+    """
+    import torchvision.models as models
+
+    model = models.vit_b_16(weights=models.ViT_B_16_Weights.IMAGENET1K_V1)
+    # Freeze the base parameters for warm-up
+    for param in model.parameters():
+        param.requires_grad = False
+    
+    # Replace the classification head
+    # ViT-B/16's head operates on 768 features.
+    in_features = model.heads.head.in_features
+    # Unfreeze the head
+    model.heads.head = nn.Linear(in_features, num_classes)
+    for param in model.heads.head.parameters():
+        param.requires_grad = True
+
+    print(f"Loaded pretrained ViT-B/16 with replaced classifier head (in={in_features}, out={num_classes}).")
+    return model

@@ -11,17 +11,19 @@ PLOTS_DIR = os.path.join(BASE_DIR, "plots")
 
 EXCEL_FILE = os.path.join(EXCEL_DIR, "data set (1).xlsx")
 
-# ─── Phase 1: AlexNet ─────────────────────────────────────────────────────────
+# ─── Phase 1: AlexNet & Modern Archs ──────────────────────────────────────────
 IMG_SIZE = (300, 300)       # EfficientNet-B3 native input size (was 227x227 for AlexNet)
+VIT_IMG_SIZE = (224, 224)   # ViT-B/16 uses 224x224
 BATCH_SIZE = 32            # reduced for EfficientNet-B3 (larger model, 300x300 inputs)
-NUM_EPOCHS = 40
+NUM_EPOCHS = 1
 LEARNING_RATE = 0.0001     # head LR; features get 0.1x after unfreeze
-UNFREEZE_EPOCH = 5
+UNFREEZE_EPOCH = 0
 DROPOUT_RATE = 0.5
 NUM_CLASSES = 2
 ALEXNET_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "alexnet_best.pth")
 EFFICIENTNET_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "efficientnet_b3_best.pth")
-ACTIVE_MODEL = "efficientnet_b3"  # "alexnet" or "efficientnet_b3"
+VIT_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "vit_b_16_best.pth")
+ACTIVE_MODEL = "efficientnet_b3"  # "alexnet" or "efficientnet_b3" or "vit_b_16"
 
 # Dataset: HR-GLDD (from Zenodo 7189381), converted from numpy to JPEG
 # Splits: train / val / test  (val used as validation during training, test for final eval)

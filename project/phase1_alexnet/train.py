@@ -14,7 +14,7 @@ from tqdm import tqdm
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from phase1_alexnet.dataset import get_dataloaders
-from phase1_alexnet.model import get_model, get_efficientnet_b3
+from phase1_alexnet.model import get_model, get_efficientnet_b3, get_vit_b_16
 
 
 def train_one_epoch(
@@ -139,6 +139,9 @@ def run_training(
     if model_name == "efficientnet_b3":
         model = get_efficientnet_b3(num_classes=config.NUM_CLASSES)
         checkpoint_path = config.EFFICIENTNET_CHECKPOINT
+    elif model_name == "vit_b_16":
+        model = get_vit_b_16(num_classes=config.NUM_CLASSES)
+        checkpoint_path = config.VIT_CHECKPOINT
     else:
         model = get_model(pretrained=pretrained, num_classes=config.NUM_CLASSES)
         checkpoint_path = config.ALEXNET_CHECKPOINT
@@ -167,6 +170,9 @@ def run_training(
             if model_name == "efficientnet_b3":
                 head_params = [p for n, p in model.named_parameters() if "classifier" in n]
                 feat_params = [p for n, p in model.named_parameters() if "classifier" not in n]
+            elif model_name == "vit_b_16":
+                head_params = [p for n, p in model.named_parameters() if "heads.head" in n]
+                feat_params = [p for n, p in model.named_parameters() if "heads.head" not in n]
             else:
                 head_params = [p for n, p in model.named_parameters() if "classifier" in n]
                 feat_params = [p for n, p in model.named_parameters() if "classifier" not in n]
@@ -178,7 +184,7 @@ def run_training(
                 weight_decay=1e-4,
             )
             scheduler = optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, T_max=num_epochs - epoch, eta_min=1e-7
+                optimizer, T_max=max(1, num_epochs - epoch), eta_min=1e-7
             )
             print(f"  --> Epoch {epoch}: Unfroze all layers for full fine-tuning")
 

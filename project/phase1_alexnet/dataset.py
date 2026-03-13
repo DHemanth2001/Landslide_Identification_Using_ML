@@ -6,11 +6,10 @@ Uses albumentations for augmentation and OpenCV for image reading.
 import os
 from pathlib import Path
 
-import albumentations as A
 import cv2
 import numpy as np
 import torch
-from albumentations.pytorch import ToTensorV2
+from torchvision import transforms
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 
 import sys
@@ -65,47 +64,46 @@ class LandslideDataset(Dataset):
         img = cv2.imread(img_path)
         if img is None:
             # Return a blank image if file is corrupted
-            img = np.zeros((*config.IMG_SIZE, 3), dtype=np.uint8)
+            img_sz = config.VIT_IMG_SIZE if config.ACTIVE_MODEL == "vit_b_16" else config.IMG_SIZE
+            img = np.zeros((*img_sz, 3), dtype=np.uint8)
         else:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         if self.transform:
-            augmented = self.transform(image=img)
-            img = augmented["image"]
+            img = self.transform(img)
         else:
             img = torch.from_numpy(img.transpose(2, 0, 1)).float() / 255.0
 
         return img, label
 
 
-def get_train_transforms() -> A.Compose:
+def get_train_transforms(img_size=None):
     """Augmentation pipeline for training images."""
-    return A.Compose(
-        [
-            A.Resize(*config.IMG_SIZE),
-            A.HorizontalFlip(p=0.5),
-            A.VerticalFlip(p=0.3),
-            A.RandomRotate90(p=0.3),
-            A.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, hue=0.05, p=0.5),
-            A.GaussianBlur(blur_limit=(3, 5), p=0.2),
-            A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.4),
-            A.GridDistortion(num_steps=5, distort_limit=0.2, p=0.2),
-            A.CoarseDropout(max_holes=8, max_height=16, max_width=16, fill_value=0, p=0.2),
-            A.Normalize(mean=config.NORMALIZE_MEAN, std=config.NORMALIZE_STD),
-            ToTensorV2(),
-        ]
-    )
+    if img_size is None:
+        img_size = config.VIT_IMG_SIZE if config.ACTIVE_MODEL == "vit_b_16" else config.IMG_SIZE
+    return transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize(img_size),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomVerticalFlip(p=0.3),
+        transforms.RandomRotation((0, 360)),
+        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, hue=0.05),
+        transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=config.NORMALIZE_MEAN, std=config.NORMALIZE_STD),
+    ])
 
 
-def get_test_transforms() -> A.Compose:
+def get_test_transforms(img_size=None):
     """Deterministic pipeline for validation/test images."""
-    return A.Compose(
-        [
-            A.Resize(*config.IMG_SIZE),
-            A.Normalize(mean=config.NORMALIZE_MEAN, std=config.NORMALIZE_STD),
-            ToTensorV2(),
-        ]
-    )
+    if img_size is None:
+        img_size = config.VIT_IMG_SIZE if config.ACTIVE_MODEL == "vit_b_16" else config.IMG_SIZE
+    return transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize(img_size),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=config.NORMALIZE_MEAN, std=config.NORMALIZE_STD),
+    ])
 
 
 def get_dataloaders(
