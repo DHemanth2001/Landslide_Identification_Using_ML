@@ -83,14 +83,17 @@ def predict_ensemble(image_path: str, effnet_scaler, vit_model, device: torch.de
     label = "landslide" if landslide_prob >= config.PHASE1_THRESHOLD else "non_landslide"
     confidence = landslide_prob if label == "landslide" else float(ensemble_probs[0])
 
+    # Calculate probabilities for all classes dynamically
+    probabilities = {
+        config.CLASS_NAMES[i]: float(ensemble_probs[i])
+        for i in range(config.NUM_CLASSES)
+    }
+
     return {
         "label": label,
         "confidence": confidence,
-        "probabilities": {
-            "landslide":     landslide_prob,
-            "non_landslide": float(ensemble_probs[0]),
-        },
-        "effnet_landslide_prob":  float(probs_effnet[1]),
-        "vit_landslide_prob": float(probs_vit[1]),
+        "probabilities": probabilities,
+        "effnet_landslide_prob":  float(probs_effnet[1]) if config.NUM_CLASSES == 2 else probs_effnet.tolist(),
+        "vit_landslide_prob": float(probs_vit[1]) if config.NUM_CLASSES == 2 else probs_vit.tolist(),
         "threshold_used": config.PHASE1_THRESHOLD,
     }

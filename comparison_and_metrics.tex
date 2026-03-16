@@ -1,0 +1,74 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+\title{Landslide Identification — Analysis and Metrics}
+\author{}
+\date{2026-03-16}
+
+\begin{document}
+
+\maketitle
+
+\section{Comparison Between Results (Progression)}
+The project went through multiple iterations (r1 through r5) to achieve the highest possible recall and precision for landslide classification.
+
+\begin{table}[h]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{@{}lllll@{}}
+        \toprule
+        \textbf{Result} & \textbf{Architecture} & \textbf{New Improvement} & \textbf{Reason} & \textbf{Performance (F1)} \\ \midrule
+        \textbf{r1} & AlexNet & Trained from scratch & Baseline establishment & 67.67\% \\
+        \textbf{r2} & AlexNet & ImageNet weights & Transfer learning (faster convergence) & 67.45\% (Recall dropped) \\
+        \textbf{r3} & EfficientNet-B3 & Deeper CNN & Capture finer textures & 70.21\% \\
+        \textbf{r4} & EffNet + AlexNet & CNN Ensemble & Averages model blindspots & 72.97\% \\
+        \textbf{r5} & EffNet + ViT & CNN+Transformer Ensemble & Global vs Local feature fusion & 76.05\% \\ \bottomrule
+    \end{tabular}
+    }
+\end{table}
+
+\section{Understanding Evaluation Metrics}
+We use multiple metrics to evaluate the model because a system that only guesses "No Landslide" every time might still score a high Accuracy (if most images are empty hills), but it would be useless during a real disaster. 
+
+\begin{itemize}
+    \item \textbf{Accuracy:} The percentage of total correct guesses (e.g., 84.50\%).
+    \item \textbf{Precision:} When the model says "LANDSLIDE," how often is it right? High precision means fewer false alarms.
+    \item \textbf{Recall:} Out of all the real landslides on the ground, how many did the model find? \textit{This is the most critical metric for disaster relief} because missing a real landslide is more dangerous than a false alarm.
+    \item \textbf{F1-score:} A harmonic mean balancing Precision and Recall. Use this metric to rank overall model quality.
+    \item \textbf{Confusion Matrix:} Shows the raw breakdown: True Positives (caught landslide), False Positives (false alarm), False Negatives (missed landslide), True Negatives (correctly ignored empty hill).
+    \item \textbf{ROC-AUC:} Measures the model's ability to separate the classes regardless of threshold. Score $\ge 90\%$ is excellent.
+    \item \textbf{Loss:} The mathematical penalty the model tries to minimize during training.
+\end{itemize}
+
+\section{Threshold Analysis}
+The "Threshold" is the confidence percentage required to officially declare an image a landslide. (By default, it is 50\%).
+
+\textbf{Current Threshold (0.47):} We mathematically scanned our Probability vs Recall curves and discovered that setting the threshold to 0.467 (46.7\%) maximized the F1 score. It strikes the perfect balance for catching almost all landslides while keeping false alarms manageable.
+
+\textbf{Effect of Increasing Threshold to 0.70:}
+If we increase the threshold to 70\%, the model must be \textit{extremely} confident to declare a landslide.
+\begin{itemize}
+    \item \textbf{Precision:} Increases significantly. False Positives (false alarms) drop to almost zero.
+    \item \textbf{Recall:} Drops dangerously. The model will record many False Negatives (missed landslides) because it is too timid to report them unless 100\% certain.
+\end{itemize}
+\textbf{Conclusion:} 0.70 is too high for a disaster warning system. We must leave the threshold at 0.467 to avoid ignoring real danger.
+
+\section{Result 5 Analysis \& Future Improvements}
+
+At Result 5, the model achieved its highest historical performance by discarding the AlexNet component and marrying the EfficientNet-B3 CNN with a Vision Transformer (ViT-B/16). The ViT leverages "attention mechanisms," allowing it to map geographical context connecting the bottom-left corner of an image to the top-right corner, something the CNN struggles to do.
+
+\subsection{Future Improvements Required to Reach 95\%+ Accuracy}
+\begin{enumerate}
+    \item \textbf{Preprocessing Strategy (Multi-Spectral):} The current model only uses Red/Green/Blue (RGB). By ingesting the Near-Infrared (NIR) band of the raw HR-GLDD satellite passes, the model can visualize vegetation health (NDVI). Damaged vegetation is the \#1 indicator of fresh mudslides.
+    \item \textbf{Hyperparameter Evolution:} Implement Ray Tune to dynamically search for the optimal learning rate decay schedules rather than hard-coding them.
+    \item \textbf{U-Net Segmentation Ensemble:} Expand the classification ensemble into an image-segmentation ensemble. Drawing the exact polygon boundary of the landslide helps rescue teams target helicopter drops.
+\end{enumerate}
+
+\end{document}

@@ -1,0 +1,161 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+
+\title{Landslide Identification Using Machine Learning \\ \large A Simple Beginner-Friendly Explanation}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{What is this project about?}
+Every year, landslides happen in mountainous areas, destroying roads, buildings, and causing loss of life. Traditionally, human experts look at satellite pictures and manually search for landslides, which is very slow and hard to do for large regions.
+
+This project solves this problem by using a \textbf{Computer Program (Machine Learning)} that acts like an artificial brain. You give this program a satellite image, and it automatically tells you:
+\begin{enumerate}
+    \item \textbf{Is there a landslide in this picture?} (Yes or No)
+    \item \textbf{If Yes, what kind of landslide is it?} (e.g., Rockfall, Mudflow)
+    \item \textbf{What is the chance of a landslide happening here again in the future?}
+\end{enumerate}
+
+\section{How does the system work? (The Two-Phase Pipeline)}
+The project is divided into two parts (or phases) that work together:
+
+\subsection{Phase 1: The Image Looker (Deep Learning CNN)}
+Imagine showing flashcards to a child to teach them what an apple looks like. Phase 1 works similarly.
+\begin{itemize}
+    \item We supply the model with thousands of satellite images. Some have landslides, some do not.
+    \item The model studies these images and learns what a landslide looks like (for example, missing trees, brown soil patches on a hill).
+    \item When given a \textit{new} image it has never seen before, it looks closely at it and gives a score (confidence) representing how sure it is that a landslide is in the image.
+\end{itemize}
+
+\textit{In this project, Phase 1 is actually an ``Ensemble" (a team of two models working together, EfficientNet-B3 and ViT-B/16) to make sure they get the right answer.}
+
+\subsection{Phase 2: The Future Predictor (HMM)}
+If Phase 1 says, \textit{``Yes, there is a landslide here"}, Phase 2 wakes up.
+\begin{itemize}
+    \item Phase 2 looks at history. It has memorized 28 years of real landslide data (collected by NASA).
+    \item If it knows a landslide just happened in a specific country, it looks at the hidden geological patterns of that region.
+    \item It calculates what type of landslide it is (like a Rockfall or a Mudslide), what triggered it (like Heavy Rain), and \textbf{predicts what will happen next month or next year}.
+\end{itemize}
+
+\section{Extended Dictionary: AI and Machine Learning Terms Used}
+If your guide asks you about the technical words in the project, you can use these simple definitions:
+
+\begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{Validation}}]
+    
+    \item[\textbf{Dataset}] 
+    \textbf{Definition:} A large collection of data (like images or text) used to teach the computer. \\
+    \textbf{Project Use:} We use a dataset of satellite images (from Zenodo) to teach Phase 1, and a dataset of past event records (from NASA) to teach Phase 2.
+
+    \item[\textbf{Feature}] 
+    \textbf{Definition:} A specific detail or pattern in the data that helps the computer make a decision. \\
+    \textbf{Project Use:} In our images, features are things like the color of the dirt, the shape of the damage, or the missing vegetation. 
+
+    \item[\textbf{Label}] 
+    \textbf{Definition:} The "answer" attached to a piece of data to teach the computer what it is looking at. \\
+    \textbf{Project Use:} If an image shows a rock falling, the label assigned is "Rockfall."
+
+    \item[\textbf{Training}] 
+    \textbf{Definition:} The process of the computer practicing and learning from the Dataset. \\
+    \textbf{Project Use:} We train our model by showing it an image, letting it guess if it's a landslide, calculating its error, and correcting it to guess better next time.
+
+    \item[\textbf{Testing}] 
+    \textbf{Definition:} Testing the computer on new data it has never seen before, like giving a student a final exam. \\
+    \textbf{Project Use:} After the model is trained, we give it fresh satellite images to prove it works in real life.
+    
+    \item[\textbf{Validation}] 
+    \textbf{Definition:} A mini-test during training used to check how well the model is learning, like a mid-term quiz. \\
+    \textbf{Project Use:} We use validation images to tune the model's settings (Hyperparameters) without spoiling the final Testing data.
+
+    \item[\textbf{Model}] 
+    \textbf{Definition:} The final "brain" or mathematical program that results after Training is complete. \\
+    \textbf{Project Use:} The Phase 1 model (EfficientNet + ViT) acts as the "eyes," and the Phase 2 model (HMM) acts as the "forecaster."
+
+    \item[\textbf{Loss}] 
+    \textbf{Definition:} A score that measures how \textit{wrong} the model is during Training. \\
+    \textbf{Project Use:} The model's goal during training is to make its "Loss" as close to zero as possible. Think of it like taking a golf swing—Loss is how far the ball is from the hole.
+
+    \item[\textbf{Accuracy}] 
+    \textbf{Definition:} The percentage of times the model makes the correct guess out of all its guesses. \\
+    \textbf{Project Use:} It tells us how reliable the overarching system is (e.g. 82.40\% accuracy means 82 correct guesses out of 100).
+
+    \item[\textbf{Precision}] 
+    \textbf{Definition:} When the model says it found a landslide, how often is it actually true? \\
+    \textbf{Project Use:} We use this to make sure the model isn't "crying wolf" and sending disaster teams to a mountain that is perfectly fine.
+
+    \item[\textbf{Recall}] 
+    \textbf{Definition:} Out of all the real landslides that exist, how many did the model find? \\
+    \textbf{Project Use:} This is very important for disaster relief. We want high recall so we don't accidentally ignore a real landslide.
+
+    \item[\textbf{F1 Score}] 
+    \textbf{Definition:} A balanced average between Precision and Recall. \\
+    \textbf{Project Use:} We use the F1 Score to pick the best model because it proves the model is great at both finding landslides and not making false alarms.
+
+    \item[\textbf{Confusion Matrix}] 
+    \textbf{Definition:} A simple 2x2 grid (or 6x6 for multi-class) showing where the model gets confused (True Positives, False Positives, etc.)  \\
+    \textbf{Project Use:} Used to see if the model is confusing "Rockfalls" with "Debris Flows", for example.
+
+    \item[\textbf{ROC Curve}] 
+    \textbf{Definition:} A graph showing how well the model separates the classes at different thresholds. \\
+    \textbf{Project Use:} Used to visualize if the model is truly learning the difference between a landslide and a normal hill, independent of cutoffs.
+    
+    \item[\textbf{Threshold}] 
+    \textbf{Definition:} The cutoff line used to make a decision (e.g. "I am 47\% sure this is a landslide"). \\
+    \textbf{Project Use:} We tested increasing the threshold to 0.70 to see if it reduces false alarms (raising Precision) at the cost of missing some landslides (lowering Recall).
+
+    \item[\textbf{Overfitting}] 
+    \textbf{Definition:} When the model memorizes the exact training images instead of learning the general patterns. \\
+    \textbf{Project Use:} If it overfits, it gets 100\% on the training data but fails completely on the test images. We use Dropout and Augmentation to prevent this.
+
+    \item[\textbf{Underfitting}] 
+    \textbf{Definition:} When the model fails to learn anything useful and just guesses randomly. \\
+    \textbf{Project Use:} If the model underfits, it means the architecture (like AlexNet) is too simple to understand complex satellite imagery.
+
+    \item[\textbf{Hyperparameters}] 
+    \textbf{Definition:} The master settings chosen by the human programmer before training begins (like the speed of learning or the size of the batch). \\
+    \textbf{Project Use:} We tune settings like Learning Rate and Epochs to get the highest Accuracy.
+    
+    \item[\textbf{Epoch}] 
+    \textbf{Definition:} One complete cycle of passing all the training data through the model.  \\
+    \textbf{Project Use:} We train our model over multiple epochs (e.g., 40 epochs). It's similar to a student reading a whole textbook 40 times to completely memorize the concepts.
+    
+    \item[\textbf{Batch Size}] 
+    \textbf{Definition:} How many images the model looks at simultaneously before updating its math. \\
+    \textbf{Project Use:} Using a batch size of 32 means the model processes 32 images at a time to speed up training on the GPU.
+    
+    \item[\textbf{Learning Rate}] 
+    \textbf{Definition:} How quickly or slowly the model updates its rules when it makes a mistake. \\
+    \textbf{Project Use:} We use a small learning rate (0.0001) for the classifier head so it slowly learns the differences between rockfalls and mudflows without breaking what it already knows.
+
+    \item[\textbf{Inference / Prediction}] 
+    \textbf{Definition:} Using the fully trained model to make an educated guess on brand new data. \\
+    \textbf{Project Use:} Phase 1 infers if an image contains a landslide. Phase 2 predicts what will happen in the future.
+
+    \item[\textbf{Classification}] 
+    \textbf{Definition:} Grouping data into specific buckets or categories. \\
+    \textbf{Project Use:} We classify the image into one of 6 buckets: Non-Landslide, Rockfall, Mudflow, Debris Flow, Rotational Slide, or Translational Slide.
+
+    \item[\textbf{Regression}] 
+    \textbf{Definition:} Predicting a continuous number instead of a category. \\
+    \textbf{Project Use:} We \textit{do not} use pure regression for the image output, but the occurrence probabilities calculated by the HMM are continuous numbers from 0\% to 100\%.
+
+    \item[\textbf{Feature Engineering}] 
+    \textbf{Definition:} Manually creating helpful data clues out of raw data to help the model learn. \\
+    \textbf{Project Use:} While Deep Learning (Phase 1) does this automatically, Phase 2 uses feature engineering by building 'Observation Sequences' from raw NASA trigger and date data.
+
+    \item[\textbf{Preprocessing}] 
+    \textbf{Definition:} Cleaning and preparing the raw data before feeding it to the computer. Like washing and chopping vegetables before cooking. \\
+    \textbf{Project Use:} We take large raw satellite data, crop it, resize the images to $300\times300$, and apply normalizations before the CNN sees them.
+
+\end{description}
+
+\end{document}

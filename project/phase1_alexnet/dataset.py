@@ -141,7 +141,7 @@ def get_dataloaders(
     shuffle = True
     if use_weighted_sampler and len(train_dataset) > 0:
         labels = [train_dataset.samples[i][1] for i in range(len(train_dataset))]
-        class_counts = [labels.count(0), labels.count(1)]
+        class_counts = [labels.count(i) for i in range(config.NUM_CLASSES)]
         weights = [1.0 / class_counts[lbl] for lbl in labels]
         sampler = WeightedRandomSampler(weights, num_samples=len(weights), replacement=True)
         shuffle = False  # mutually exclusive with sampler
