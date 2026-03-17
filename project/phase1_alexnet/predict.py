@@ -1,6 +1,7 @@
 """
-Single-image inference for the trained AlexNet model.
-Used by the pipeline to determine if an image contains a landslide.
+Single-image inference for the trained landslide classifier (multi-class).
+Predicts one of 6 classes: non_landslide, rockfall, mudflow, debris_flow,
+                           rotational_slide, translational_slide.
 """
 
 import os
@@ -13,24 +14,26 @@ import torch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from phase1_alexnet.dataset import get_test_transforms
-from phase1_alexnet.model import get_model, get_efficientnet_b3
+from phase1_alexnet.model import get_model, get_efficientnet_b3, get_vit_b_16
 from phase1_alexnet.train import load_checkpoint
 from utils.temperature_scaling import TemperatureScaler, load_temperature
 
 
 def load_alexnet_model(checkpoint_path: str = None, device: torch.device = None):
-    """Load AlexNet from checkpoint, return (model, device)."""
+    """Load model from checkpoint, return (model, device)."""
     if checkpoint_path is None:
-        checkpoint_path = (
-            config.EFFICIENTNET_CHECKPOINT
-            if config.ACTIVE_MODEL == "efficientnet_b3"
-            else config.ALEXNET_CHECKPOINT
-        )
+        if config.ACTIVE_MODEL == "efficientnet_b3":
+            checkpoint_path = config.EFFICIENTNET_CHECKPOINT
+        elif config.ACTIVE_MODEL == "vit_b_16":
+            checkpoint_path = config.VIT_CHECKPOINT
+        else:
+            checkpoint_path = config.ALEXNET_CHECKPOINT
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Try each architecture until one matches the checkpoint
     for model_fn in [
+        lambda: get_vit_b_16(num_classes=config.NUM_CLASSES),
         lambda: get_efficientnet_b3(num_classes=config.NUM_CLASSES),
         lambda: get_model(pretrained=True, num_classes=config.NUM_CLASSES),
         lambda: get_model(pretrained=False, num_classes=config.NUM_CLASSES),
@@ -56,18 +59,19 @@ def load_alexnet_model(checkpoint_path: str = None, device: torch.device = None)
 
 def predict_single_image(image_path: str, model, device: torch.device) -> dict:
     """
-    Predict whether a single image contains a landslide.
+    Predict the class of a single image (multi-class).
 
     Args:
         image_path: Path to the image file.
-        model:      Loaded AlexNet model in eval mode.
+        model:      Loaded model in eval mode.
         device:     torch.device.
 
     Returns:
         dict with keys:
-          - label: 'landslide' or 'non_landslide'
+          - label: one of CLASS_NAMES (e.g. 'rockfall', 'mudflow', ...)
           - confidence: float (probability of the predicted class)
-          - probabilities: {'landslide': float, 'non_landslide': float}
+          - probabilities: dict mapping each class name to its probability
+          - is_landslide: bool (True if predicted class is not 'non_landslide')
     """
     img = cv2.imread(image_path)
     if img is None:
@@ -75,8 +79,7 @@ def predict_single_image(image_path: str, model, device: torch.device) -> dict:
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     transform = get_test_transforms()
-    augmented = transform(image=img)
-    tensor = augmented["image"].unsqueeze(0).to(device)  # (1, 3, 227, 227)
+    tensor = transform(img).unsqueeze(0).to(device)
 
     with torch.no_grad():
         outputs = model(tensor)
@@ -86,13 +89,20 @@ def predict_single_image(image_path: str, model, device: torch.device) -> dict:
     label = config.CLASS_NAMES[label_idx]
     confidence = float(probs[label_idx])
 
+    probabilities = {
+        config.CLASS_NAMES[i]: float(probs[i])
+        for i in range(config.NUM_CLASSES)
+    }
+
+    # Aggregate landslide probability (sum of all landslide sub-types)
+    landslide_prob = float(sum(probs[i] for i in range(1, config.NUM_CLASSES)))
+
     return {
         "label": label,
         "confidence": confidence,
-        "probabilities": {
-            "landslide": float(probs[1]),
-            "non_landslide": float(probs[0]),
-        },
+        "probabilities": probabilities,
+        "is_landslide": label != "non_landslide",
+        "landslide_prob": landslide_prob,
     }
 
 
@@ -124,8 +134,11 @@ if __name__ == "__main__":
 
     mdl, dev = load_alexnet_model(args.checkpoint)
     result = predict_single_image(args.image, mdl, dev)
-    print(f"\nImage   : {args.image}")
-    print(f"Label   : {result['label']}")
-    print(f"Confidence: {result['confidence']:.4f}")
-    print(f"Landslide probability    : {result['probabilities']['landslide']:.4f}")
-    print(f"Non-Landslide probability: {result['probabilities']['non_landslide']:.4f}")
+    print(f"\nImage      : {args.image}")
+    print(f"Label      : {result['label']}")
+    print(f"Confidence : {result['confidence']:.4f}")
+    print(f"Is landslide: {result['is_landslide']}")
+    print(f"Landslide probability (aggregate): {result['landslide_prob']:.4f}")
+    print("Per-class probabilities:")
+    for cls, prob in result["probabilities"].items():
+        print(f"  {cls:>20s}: {prob:.4f}")

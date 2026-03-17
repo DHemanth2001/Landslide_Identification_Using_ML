@@ -1,74 +1,462 @@
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{geometry}
-\geometry{a4paper, margin=1in}
+\geometry{a4paper, margin=0.9in}
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{tabularx}
 \usepackage{booktabs}
 \usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{longtable}
+\usepackage{float}
 
-\title{Landslide Identification — Analysis and Metrics}
+% Colors for highlighting
+\definecolor{bestgreen}{RGB}{200, 240, 200}
+\definecolor{newblue}{RGB}{210, 230, 255}
+
+\title{Landslide Identification — Detailed Comparison \& Metrics\\[0.3em]
+\large Results r0 through r7: What Changed, Why, and How It Helped}
 \author{}
-\date{2026-03-16}
+\date{2026-03-17}
 
 \begin{document}
 
 \maketitle
+\tableofcontents
+\newpage
 
-\section{Comparison Between Results (Progression)}
-The project went through multiple iterations (r1 through r5) to achieve the highest possible recall and precision for landslide classification.
+% ============================================================================
+\section{How to Read This Document (Beginner's Guide)}
+% ============================================================================
 
-\begin{table}[h]
-    \centering
-    \resizebox{\textwidth}{!}{
-    \begin{tabular}{@{}lllll@{}}
-        \toprule
-        \textbf{Result} & \textbf{Architecture} & \textbf{New Improvement} & \textbf{Reason} & \textbf{Performance (F1)} \\ \midrule
-        \textbf{r1} & AlexNet & Trained from scratch & Baseline establishment & 67.67\% \\
-        \textbf{r2} & AlexNet & ImageNet weights & Transfer learning (faster convergence) & 67.45\% (Recall dropped) \\
-        \textbf{r3} & EfficientNet-B3 & Deeper CNN & Capture finer textures & 70.21\% \\
-        \textbf{r4} & EffNet + AlexNet & CNN Ensemble & Averages model blindspots & 72.97\% \\
-        \textbf{r5} & EffNet + ViT & CNN+Transformer Ensemble & Global vs Local feature fusion & 76.05\% \\ \bottomrule
-    \end{tabular}
-    }
+Imagine you are building a robot that looks at satellite photos and tells you: \textit{``There's a landslide here!''} Over eight rounds of improvements (called \textbf{r0} through \textbf{r7}), we made this robot smarter and smarter. This document explains:
+
+\begin{enumerate}[nosep]
+    \item \textbf{What changed} in each round.
+    \item \textbf{Why} we made that change (the motivation).
+    \item \textbf{How it helped} (the performance impact --- did the robot get better?).
+\end{enumerate}
+
+\noindent Think of it like upgrading a car:
+\begin{itemize}[nosep]
+    \item r0 = Basic car (gets you from A to B).
+    \item r1 = Add a GPS (pretrained knowledge).
+    \item r2 = Swap the engine for a better one (EfficientNet).
+    \item r3 = Calibrate the speedometer so it reads correctly (temperature scaling).
+    \item r4 = Add a second engine for backup (ensemble with AlexNet).
+    \item r5 = Replace the backup engine with a jet engine (Vision Transformer).
+    \item r6 = Teach the car to identify \emph{what kind} of road problem it sees (multi-class).
+\end{itemize}
+
+% ============================================================================
+\section{Understanding the Metrics (What the Numbers Mean)}
+% ============================================================================
+
+Before we compare results, let's understand the ``report card'' we use:
+
+\subsection{Accuracy}
+\textbf{What it means:} Out of all images, what percentage did the model get right?\\
+\textbf{Example:} If the model sees 100 photos and correctly labels 85 of them, accuracy = 85\%.\\
+\textbf{Limitation:} If 90 out of 100 photos are \emph{not} landslides, a lazy model that always says ``no landslide'' gets 90\% accuracy --- but it's useless! That's why we need more metrics.
+
+\subsection{Precision}
+\textbf{What it means:} When the model says ``LANDSLIDE!'' --- how often is it actually right?\\
+\textbf{Analogy:} A fire alarm with high precision rarely gives false alarms.\\
+\textbf{Formula:} Precision = True Positives / (True Positives + False Positives)
+
+\subsection{Recall (most critical for disaster monitoring)}
+\textbf{What it means:} Out of all the real landslides in the dataset, how many did the model catch?\\
+\textbf{Analogy:} A fire alarm with high recall catches every fire, even if it occasionally rings for burnt toast.\\
+\textbf{Why it matters most:} Missing a real landslide (low recall) is \emph{far more dangerous} than a false alarm (low precision). A missed landslide means people don't get evacuated.\\
+\textbf{Formula:} Recall = True Positives / (True Positives + False Negatives)
+
+\subsection{F1-Score}
+\textbf{What it means:} A single number that balances Precision and Recall. If one is very low, F1 will be low too.\\
+\textbf{Analogy:} Your overall grade that combines both ``accuracy of alarms'' and ``completeness of detection.''\\
+\textbf{Formula:} F1 = 2 $\times$ (Precision $\times$ Recall) / (Precision + Recall)
+
+\subsection{ROC-AUC}
+\textbf{What it means:} How good is the model at separating landslides from non-landslides, regardless of what confidence threshold you pick?\\
+\textbf{Scale:} 50\% = random guessing, 100\% = perfect. Above 90\% is excellent.\\
+\textbf{Why it's useful:} It tells you the model's \emph{fundamental ability} to tell classes apart.
+
+\subsection{Confusion Matrix}
+A table that shows exactly where the model gets confused:
+\begin{itemize}[nosep]
+    \item \textbf{True Positive (TP):} Model said ``landslide'' and it \emph{was} a landslide.
+    \item \textbf{True Negative (TN):} Model said ``no landslide'' and it \emph{wasn't} one.
+    \item \textbf{False Positive (FP):} Model said ``landslide'' but it \emph{wasn't} one (false alarm).
+    \item \textbf{False Negative (FN):} Model said ``no landslide'' but it \emph{was} one (missed!).
+\end{itemize}
+
+\subsection{Macro vs Weighted Average (for multi-class)}
+When we have 6 classes instead of 2:
+\begin{itemize}[nosep]
+    \item \textbf{Macro average:} Calculate the metric for each class separately, then take the plain average. Treats all classes equally (even tiny ones).
+    \item \textbf{Weighted average:} Same, but weights each class by how many samples it has. Gives a fairer picture when classes have very different sizes.
+\end{itemize}
+
+% ============================================================================
+\newpage
+\section{The Master Comparison Table}
+% ============================================================================
+
+This is the most important table in this document. Each row is one version of our system.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\resizebox{\textwidth}{!}{
+\begin{tabular}{@{}p{0.8cm}p{3.2cm}p{4.5cm}p{4.5cm}p{3cm}@{}}
+\toprule
+\textbf{Result} & \textbf{Architecture} & \textbf{New Improvement} & \textbf{Reason for Change} & \textbf{Performance (F1 / AUC)} \\
+\midrule
+\textbf{r0} &
+AlexNet (from scratch) + HMM (4 states) &
+Baseline system --- no prior knowledge &
+Establish a starting point to measure all future improvements against &
+67.67\% / 85.53\% \\
+\midrule
+\textbf{r1} &
+AlexNet (ImageNet pretrained) + HMM (6 states) &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+$\bullet$ Pretrained ImageNet weights\\
+$\bullet$ Two-stage learning rates\\
+$\bullet$ Stronger augmentation\\
+$\bullet$ 6 HMM states (was 4)\\
+$\bullet$ 40 epochs (was 30)
+\end{minipage} &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+Transfer learning lets the model start with knowledge of edges, textures, and shapes learned from 1.2M natural images, instead of learning everything from our small 2K dataset.
+\end{minipage} &
+67.45\% / 88.33\%\newline
+(Precision up +4.6pp,\newline Recall down $-$6.2pp) \\
+\midrule
+\textbf{r2} &
+EfficientNet-B3 (pretrained) + HMM (6 states) &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+$\bullet$ Replaced AlexNet with EfficientNet-B3\\
+$\bullet$ Input: 227$\to$300px\\
+$\bullet$ CosineAnnealingLR\\
+$\bullet$ Batch size: 64$\to$32
+\end{minipage} &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+EfficientNet uses ``compound scaling'' --- it carefully increases depth, width, and resolution together. This captures finer spatial details than AlexNet's shallow 5-layer design, with fewer parameters (12M vs 62M).
+\end{minipage} &
+\cellcolor{bestgreen}70.21\% / 88.93\%\newline
+(Best Recall so far:\newline 78.20\%) \\
+\midrule
+\textbf{r3} &
+EfficientNet-B3 + Temp.\ Scaling + HMM (8 states, 42 symbols) &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+$\bullet$ Temperature scaling ($T=1.15$)\\
+$\bullet$ HMM: 6$\to$8 hidden states\\
+$\bullet$ HMM: type$\times$trigger = 42 symbols\\
+$\bullet$ Threshold: 0.5$\to$0.4
+\end{minipage} &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+The model was overconfident --- saying 95\% when it was really only 80\% sure. Temperature scaling ``softens'' these probabilities so they match reality. The HMM gets richer information by combining landslide type with its trigger (rain, earthquake, etc.).
+\end{minipage} &
+70.21\% / 88.93\%\newline
+(Same accuracy, but\newline confidence scores\newline now trustworthy) \\
+\midrule
+\textbf{r4} &
+Ensemble: EfficientNet-B3 (60\%) + AlexNet (40\%) + HMM-8 &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+$\bullet$ Two-model ensemble\\
+$\bullet$ Weighted probability averaging\\
+$\bullet$ Optimal threshold: 0.467\\
+$\bullet$ No retraining needed
+\end{minipage} &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+When one model is uncertain about an image, the other often has a clearer answer. Combining two different architectures averages out their individual mistakes --- like asking two doctors for a second opinion.
+\end{minipage} &
+\cellcolor{bestgreen}72.97\% / 89.83\%\newline
+(All 5 metrics improve\newline simultaneously!) \\
+\midrule
+\textbf{r5} &
+Ensemble: EfficientNet-B3 (60\%) + ViT-B/16 (40\%) + HMM-8 &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+$\bullet$ Replaced AlexNet with ViT-B/16\\
+$\bullet$ CNN + Transformer diversity\\
+$\bullet$ ViT val\_acc = 83.50\%
+\end{minipage} &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+A Vision Transformer (ViT) cuts the image into 16$\times$16 patches and uses ``attention'' to see relationships between distant parts of the image. A CNN only sees local neighborhoods. Together, they capture both local textures and global spatial patterns.
+\end{minipage} &
+\cellcolor{bestgreen}76.05\% / 91.50\%\newline
+\textbf{Best binary result}\newline
+(Acc=84.50\%) \\
+\midrule
+\rowcolor{newblue}
+\textbf{r6} &
+Same ensemble + \textbf{6-class multi-class output} &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+$\bullet$ 6-class classification\\
+$\bullet$ Multi-class metrics\\
+$\bullet$ One-vs-Rest ROC\\
+$\bullet$ Per-class confusion matrix\\
+$\bullet$ WeightedRandomSampler
+\end{minipage} &
+\begin{minipage}[t]{4.5cm}\vspace{0pt}
+Previously the model only said ``landslide.'' Now it identifies the \emph{specific type} (rockfall, mudflow, debris flow, rotational slide, translational slide). This gives emergency responders actionable information --- different types need different responses.
+\end{minipage} &
+46.93\% (macro) /\newline 71.68\% (weighted) /\newline 88.45\% AUC\newline
+(6 classes, not comparable\newline to binary F1 directly) \\
+\bottomrule
+\end{tabular}
+}
+\caption{Complete comparison of all result iterations (r0--r6). Green rows mark major F1 improvements. Blue row marks the paradigm shift to multi-class.}
 \end{table}
 
-\section{Understanding Evaluation Metrics}
-We use multiple metrics to evaluate the model because a system that only guesses "No Landslide" every time might still score a high Accuracy (if most images are empty hills), but it would be useless during a real disaster. 
+% ============================================================================
+\newpage
+\section{Detailed Explanation of Each Change}
+% ============================================================================
 
-\begin{itemize}
-    \item \textbf{Accuracy:} The percentage of total correct guesses (e.g., 84.50\%).
-    \item \textbf{Precision:} When the model says "LANDSLIDE," how often is it right? High precision means fewer false alarms.
-    \item \textbf{Recall:} Out of all the real landslides on the ground, how many did the model find? \textit{This is the most critical metric for disaster relief} because missing a real landslide is more dangerous than a false alarm.
-    \item \textbf{F1-score:} A harmonic mean balancing Precision and Recall. Use this metric to rank overall model quality.
-    \item \textbf{Confusion Matrix:} Shows the raw breakdown: True Positives (caught landslide), False Positives (false alarm), False Negatives (missed landslide), True Negatives (correctly ignored empty hill).
-    \item \textbf{ROC-AUC:} Measures the model's ability to separate the classes regardless of threshold. Score $\ge 90\%$ is excellent.
-    \item \textbf{Loss:} The mathematical penalty the model tries to minimize during training.
+\subsection{r0 $\to$ r1: Adding Prior Knowledge (Transfer Learning)}
+
+\textbf{What changed:} Instead of training AlexNet from a blank slate (random weights), we started with weights that were already trained on ImageNet --- a dataset of 1.2 million natural images.
+
+\textbf{Why this helps (in simple terms):}\\
+Imagine teaching a child to identify landslides in satellite photos. If the child has \emph{never seen any image before}, you need thousands of examples just to teach them what ``edges,'' ``textures,'' and ``colors'' are. But if the child already knows how to see (from looking at millions of everyday photos), you only need to teach them: ``\emph{this particular pattern} is a landslide.'' That's transfer learning.
+
+\textbf{Performance impact:}
+\begin{itemize}[nosep]
+    \item Precision improved significantly: 62.06\% $\to$ 66.67\% (+4.6pp).
+    \item ROC-AUC improved: 85.53\% $\to$ 88.33\% (+2.8pp).
+    \item Recall decreased slightly: 74.41\% $\to$ 68.25\% ($-$6.2pp). The pretrained model became more conservative --- fewer false alarms, but also missed more real landslides.
 \end{itemize}
 
+\subsection{r1 $\to$ r2: Swapping the Engine (EfficientNet-B3)}
+
+\textbf{What changed:} We replaced the entire AlexNet architecture with EfficientNet-B3.
+
+\textbf{Why this helps (in simple terms):}\\
+AlexNet was designed in 2012 and has only 5 convolutional layers. It's like looking at a satellite photo through a keyhole --- you can see small patches but miss the bigger picture. EfficientNet-B3 (2019) has many more layers arranged more efficiently, and it looks at the image at 300$\times$300 pixels instead of 227$\times$227 --- like upgrading from a keyhole to a window.
+
+\textbf{Performance impact:}
+\begin{itemize}[nosep]
+    \item Recall jumped: 68.25\% $\to$ 78.20\% (+9.95pp). The model catches far more real landslides.
+    \item F1-Score improved: 67.45\% $\to$ 70.21\% (+2.76pp).
+    \item ROC-AUC improved: 88.33\% $\to$ 88.93\% (new best at the time).
+\end{itemize}
+
+\subsection{r2 $\to$ r3: Calibrating the Speedometer (Temperature Scaling)}
+
+\textbf{What changed:} We added a mathematical correction so that when the model says ``I'm 70\% sure this is a landslide,'' it really \emph{is} correct about 70\% of the time.
+
+\textbf{Why this helps (in simple terms):}\\
+Deep learning models tend to be overconfident. Your model might say ``I'm 95\% sure!'' when it's actually only 80\% sure. This is dangerous because people trust the confidence number when deciding whether to evacuate. Temperature scaling divides the model's internal scores by a number $T > 1$, which ``softens'' the overconfident probabilities to match reality.
+
+\textbf{Performance impact:}
+\begin{itemize}[nosep]
+    \item Accuracy, Precision, Recall, F1, ROC-AUC: \emph{unchanged} (temperature scaling doesn't change which class the model picks).
+    \item Confidence scores: now calibrated and trustworthy.
+    \item HMM upgraded to 8 states with 42 observation symbols (type $\times$ trigger), giving richer temporal modeling.
+\end{itemize}
+
+\subsection{r3 $\to$ r4: Two Doctors Are Better Than One (Ensemble)}
+
+\textbf{What changed:} Instead of relying on one model, we combined EfficientNet-B3 and AlexNet by averaging their probability outputs (60\%/40\% weighted).
+
+\textbf{Why this helps (in simple terms):}\\
+If you're unsure about a medical diagnosis, you get a second opinion. If both doctors agree, you're more confident. If they disagree, you investigate further. Similarly, when EfficientNet is uncertain about an image, AlexNet might have a clearer answer (and vice versa). Averaging their opinions reduces both false alarms \emph{and} missed detections.
+
+\textbf{Performance impact:}
+\begin{itemize}[nosep]
+    \item \emph{All five metrics improved simultaneously} --- the only result where this happened.
+    \item Accuracy: 79.97\% $\to$ 82.40\% (+2.43pp).
+    \item F1-Score: 70.21\% $\to$ 72.97\% (+2.76pp).
+    \item ROC-AUC: 88.93\% $\to$ 89.83\% (+0.90pp).
+\end{itemize}
+
+\subsection{r4 $\to$ r5: Upgrading the Second Doctor (Vision Transformer)}
+
+\textbf{What changed:} We replaced AlexNet in the ensemble with a Vision Transformer (ViT-B/16).
+
+\textbf{Why this helps (in simple terms):}\\
+A CNN (like EfficientNet) looks at the image through small sliding windows --- it's great at detecting local textures (cracks, soil color). But it struggles to see how the top-left corner of an image relates to the bottom-right corner. A Vision Transformer (ViT) cuts the image into 14$\times$14 patches and uses ``attention'' to connect \emph{every patch to every other patch}. The CNN sees the trees; the ViT sees the forest. Together, they see everything.
+
+\textbf{Performance impact:}
+\begin{itemize}[nosep]
+    \item Accuracy: 82.40\% $\to$ 84.50\% (+2.10pp).
+    \item F1-Score: 72.97\% $\to$ 76.05\% (+3.08pp).
+    \item ROC-AUC: 89.83\% $\to$ 91.50\% (+1.67pp). First time above 91\%!
+    \item This is the \textbf{best binary classification result} in the entire project.
+\end{itemize}
+
+\subsection{r5 $\to$ r6: Teaching the Robot \emph{What Kind} of Landslide (Multi-Class)}
+
+\textbf{What changed:} The model now classifies images into 6 specific categories instead of just ``landslide'' or ``not landslide.''
+
+\textbf{Why this helps (in simple terms):}\\
+Imagine a doctor who can only say ``You're sick'' vs ``You're healthy.'' That's r5. Now imagine a doctor who says ``You have the flu'' or ``You have a broken arm'' --- that's r6. Knowing the \emph{type} of landslide tells emergency responders exactly what to expect:
+\begin{itemize}[nosep]
+    \item \textbf{Rockfall:} Fast, localized. Evacuate the immediate area.
+    \item \textbf{Mudflow:} Slow but wide-reaching. Evacuate entire valleys.
+    \item \textbf{Debris flow:} Carries rocks and trees. Extremely destructive.
+    \item \textbf{Rotational slide:} Curved failure plane. Buildings may tilt.
+    \item \textbf{Translational slide:} Flat failure plane. Roads may be cut off.
+\end{itemize}
+
+\textbf{Performance impact:}
+\begin{itemize}[nosep]
+    \item Macro F1 drops to 46.93\% --- but this is \emph{expected}. Going from 2 classes to 6 classes is like going from a True/False exam to a multiple-choice exam. It's harder by definition.
+    \item Weighted F1 = 71.68\% (fairer comparison to binary 76.05\%).
+    \item Non-landslide class remains strong: F1 = 0.87.
+    \item ROC-AUC (macro) = 88.45\% --- the model still ranks classes well.
+\end{itemize}
+
+% ============================================================================
+\newpage
+\section{Numerical Comparison Tables}
+% ============================================================================
+
+\subsection{Phase 1 Metrics Across All Results}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Result} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{ROC-AUC} \\
+\midrule
+r0 (AlexNet)       & 78.54\% & 62.06\% & 74.41\% & 67.67\% & 85.53\% \\
+r1 (Pretrained)    & 80.11\% & 66.67\% & 68.25\% & 67.45\% & 88.33\% \\
+r2 (EfficientNet)  & 79.97\% & 63.71\% & 78.20\% & 70.21\% & 88.93\% \\
+r3 (Calibrated)    & 79.97\% & 63.71\% & 78.20\% & 70.21\% & 88.93\% \\
+r4 (Eff+Alex)      & 82.40\% & 68.03\% & 78.67\% & 72.97\% & 89.83\% \\
+\rowcolor{bestgreen}
+r5 (Eff+ViT)       & \textbf{84.50\%} & \textbf{71.50\%} & \textbf{81.20\%} & \textbf{76.05\%} & \textbf{91.50\%} \\
+\bottomrule
+\end{tabular}
+\caption{Binary classification metrics (r0--r5). r5 is the best across all metrics.}
+\end{table}
+
+\subsection{Multi-Class Metrics (r6)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Metric} & \textbf{Macro Average} & \textbf{Weighted Average} \\
+\midrule
+Accuracy    & \multicolumn{2}{c}{72.10\%} \\
+Precision   & 48.52\% & 71.85\% \\
+Recall      & 45.87\% & 72.10\% \\
+F1-Score    & 46.93\% & 71.68\% \\
+ROC-AUC     & 88.45\% & --- \\
+\bottomrule
+\end{tabular}
+\caption{r6 multi-class metrics. Weighted averages are fairer due to class imbalance.}
+\end{table}
+
+\subsection{Per-Class Performance (r6)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{Support} \\
+\midrule
+non\_landslide       & 0.85 & 0.88 & 0.87 & 488 \\
+rockfall             & 0.42 & 0.38 & 0.40 &  34 \\
+mudflow              & 0.39 & 0.36 & 0.37 &  44 \\
+debris\_flow         & 0.44 & 0.41 & 0.42 &  49 \\
+rotational\_slide    & 0.41 & 0.33 & 0.37 &  42 \\
+translational\_slide & 0.40 & 0.38 & 0.39 &  42 \\
+\bottomrule
+\end{tabular}
+\caption{Per-class metrics for r6. Non-landslide is strong; sub-types suffer from limited training data.}
+\end{table}
+
+% ============================================================================
+\section{HMM (Phase 2) Evolution}
+% ============================================================================
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Result} & \textbf{Hidden States} & \textbf{Obs.\ Symbols} & \textbf{Log-Likelihood} & \textbf{Key Change} \\
+\midrule
+r0 & 4 & 7 (type only)   & $-$7314.96  & Baseline \\
+r1 & 6 & 7 (type only)   & $-$7247.68  & +Mixed Flow, +Complex Event \\
+r2 & 6 & 7 (type only)   & $-$7247.68  & (unchanged) \\
+r3 & 8 & 42 (type$\times$trigger) & $-$12675.40$^\dagger$ & +Monsoon, +Human-Triggered \\
+r4--r6 & 8 & 42          & $-$12675.40 & (unchanged) \\
+\bottomrule
+\end{tabular}
+\caption{HMM evolution. $^\dagger$Log-likelihood not comparable across different vocabulary sizes.}
+\end{table}
+
+% ============================================================================
 \section{Threshold Analysis}
-The "Threshold" is the confidence percentage required to officially declare an image a landslide. (By default, it is 50\%).
+% ============================================================================
 
-\textbf{Current Threshold (0.47):} We mathematically scanned our Probability vs Recall curves and discovered that setting the threshold to 0.467 (46.7\%) maximized the F1 score. It strikes the perfect balance for catching almost all landslides while keeping false alarms manageable.
+The ``threshold'' is the confidence percentage required to officially declare an image a landslide. By default, most systems use 50\%.
 
-\textbf{Effect of Increasing Threshold to 0.70:}
-If we increase the threshold to 70\%, the model must be \textit{extremely} confident to declare a landslide.
-\begin{itemize}
-    \item \textbf{Precision:} Increases significantly. False Positives (false alarms) drop to almost zero.
-    \item \textbf{Recall:} Drops dangerously. The model will record many False Negatives (missed landslides) because it is too timid to report them unless 100\% certain.
-\end{itemize}
-\textbf{Conclusion:} 0.70 is too high for a disaster warning system. We must leave the threshold at 0.467 to avoid ignoring real danger.
+\subsection{How We Found the Optimal Threshold}
+We scanned every possible threshold from 0\% to 100\% and measured the F1-Score at each point. The threshold that maximized F1 was \textbf{0.467 (46.7\%)}.
 
-\section{Result 5 Analysis \& Future Improvements}
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+\textbf{Threshold} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{AUC} \\
+\midrule
+0.400 & 79.97\% & 62.63\% & 83.41\% & 71.54\% & 89.83\% \\
+\rowcolor{bestgreen}
+\textbf{0.467} & \textbf{82.40\%} & \textbf{68.03\%} & \textbf{78.67\%} & \textbf{72.97\%} & \textbf{89.83\%} \\
+0.500 & 82.55\% & 69.96\% & 73.93\% & 71.89\% & 89.83\% \\
+0.700 & 83.12\% & 78.91\% & 54.03\% & 64.15\% & 89.83\% \\
+\bottomrule
+\end{tabular}
+\caption{Threshold scan results. 0.467 maximizes F1 (the best balance of precision and recall).}
+\end{table}
 
-At Result 5, the model achieved its highest historical performance by discarding the AlexNet component and marrying the EfficientNet-B3 CNN with a Vision Transformer (ViT-B/16). The ViT leverages "attention mechanisms," allowing it to map geographical context connecting the bottom-left corner of an image to the top-right corner, something the CNN struggles to do.
+\textbf{Why not 0.70?} At 70\% threshold, the model becomes too cautious. Recall drops to 54\% --- meaning it \emph{misses nearly half} of all real landslides. For a disaster warning system, this is unacceptable.
 
-\subsection{Future Improvements Required to Reach 95\%+ Accuracy}
+\textbf{Why not 0.40?} At 40\%, recall is excellent (83.41\%) but precision drops --- more false alarms. The 0.467 threshold is the ``sweet spot'' that catches most landslides while keeping false alarms manageable.
+
+% ============================================================================
+\section{Key Takeaways}
+% ============================================================================
+
 \begin{enumerate}
-    \item \textbf{Preprocessing Strategy (Multi-Spectral):} The current model only uses Red/Green/Blue (RGB). By ingesting the Near-Infrared (NIR) band of the raw HR-GLDD satellite passes, the model can visualize vegetation health (NDVI). Damaged vegetation is the \#1 indicator of fresh mudslides.
-    \item \textbf{Hyperparameter Evolution:} Implement Ray Tune to dynamically search for the optimal learning rate decay schedules rather than hard-coding them.
-    \item \textbf{U-Net Segmentation Ensemble:} Expand the classification ensemble into an image-segmentation ensemble. Drawing the exact polygon boundary of the landslide helps rescue teams target helicopter drops.
+    \item \textbf{Transfer learning (r0$\to$r1)} gave the biggest ROC-AUC jump (+2.8pp) with minimal effort --- always use pretrained weights when your dataset is small.
+
+    \item \textbf{Architecture upgrade (r1$\to$r2)} gave the biggest Recall jump (+9.95pp) --- a deeper, modern network simply ``sees'' more landslides.
+
+    \item \textbf{Temperature scaling (r2$\to$r3)} didn't change accuracy but made the model's confidence scores trustworthy --- critical for real-world decision-making.
+
+    \item \textbf{Ensemble (r3$\to$r4)} was the only change where \emph{all five metrics improved simultaneously} --- combining diverse models is almost always beneficial.
+
+    \item \textbf{CNN + Transformer ensemble (r4$\to$r5)} achieved the best binary results (F1=76.05\%, AUC=91.50\%) by combining local and global image understanding.
+
+    \item \textbf{Multi-class (r5$\to$r6)} trades raw accuracy for actionable intelligence --- knowing ``rockfall'' vs ``mudflow'' enables life-saving targeted responses.
+
+    \item \textbf{The biggest remaining challenge} is data scarcity for sub-types ($\sim$120 images per type). More labelled data would dramatically improve multi-class performance.
+\end{enumerate}
+
+% ============================================================================
+\section{Future Improvements Required to Reach 95\%+ Accuracy}
+% ============================================================================
+
+\begin{enumerate}
+    \item \textbf{More data per sub-type:} At least 500+ labelled images per landslide type. Sources: Bijie-Landslide dataset, expert annotation campaigns.
+
+    \item \textbf{Multi-spectral inputs:} The current model only uses RGB. Adding Near-Infrared (NIR) enables computing NDVI (vegetation health index) --- damaged vegetation is the \#1 indicator of fresh mudslides.
+
+    \item \textbf{DEM / terrain data:} Digital Elevation Models help distinguish rotational slides (curved failure plane) from translational slides (flat failure plane).
+
+    \item \textbf{Hyperparameter search:} Use automated tools (Ray Tune, Optuna) to find optimal learning rates, augmentation strengths, and ensemble weights instead of manual tuning.
+
+    \item \textbf{U-Net segmentation:} In addition to classifying the image, draw the exact polygon boundary of the landslide. This helps rescue teams target helicopter drops.
+
+    \item \textbf{Multi-temporal imagery:} Before/after satellite image pairs reveal the deformation pattern unique to each landslide type.
 \end{enumerate}
 
 \end{document}

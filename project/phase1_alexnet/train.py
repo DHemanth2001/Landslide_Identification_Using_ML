@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from phase1_alexnet.dataset import get_dataloaders
 from phase1_alexnet.model import get_model, get_efficientnet_b3, get_vit_b_16
+from utils.focal_loss import FocalLoss
 
 
 def train_one_epoch(
@@ -94,6 +95,8 @@ def run_training(
     pretrained: bool = False,
     processed_dir: str = None,
     model_name: str = None,
+    use_focal_loss: bool = True,
+    focal_gamma: float = 2.0,
 ) -> tuple:
     """
     Full training pipeline.
@@ -153,7 +156,12 @@ def run_training(
         lr=learning_rate,
         weight_decay=1e-4,
     )
-    criterion = nn.CrossEntropyLoss()
+    if use_focal_loss:
+        criterion = FocalLoss(gamma=focal_gamma)
+        print(f"Using Focal Loss (gamma={focal_gamma})")
+    else:
+        criterion = nn.CrossEntropyLoss()
+        print("Using Cross-Entropy Loss")
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=1e-7)
 
     history = {"train_loss": [], "val_loss": [], "train_acc": [], "val_acc": []}

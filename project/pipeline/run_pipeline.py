@@ -99,7 +99,11 @@ class LandslideIdentificationPipeline:
         year: int = None,
     ) -> dict:
         """
-        Run end-to-end prediction for one image.
+        Run end-to-end prediction for one image (multi-class).
+
+        Phase 1 now directly predicts the specific landslide type:
+          non_landslide, rockfall, mudflow, debris_flow,
+          rotational_slide, translational_slide.
 
         Args:
             image_path:       Path to the input image.
@@ -110,11 +114,14 @@ class LandslideIdentificationPipeline:
         Returns:
             Unified result dict.
         """
-        # ── Phase 1: Ensemble classification ─────────────────────────────────
+        # ── Phase 1: Multi-class ensemble classification ─────────────────────
         phase1_result = predict_ensemble(image_path, self.effnet, self.vit_model, self.device)
 
         # Support legacy 'location' arg as country
         effective_country = country or location
+
+        is_landslide = phase1_result.get("is_landslide", phase1_result["label"] != "non_landslide")
+        landslide_type = phase1_result.get("landslide_type", phase1_result["label"])
 
         result = {
             "image_path": image_path,
@@ -123,11 +130,8 @@ class LandslideIdentificationPipeline:
             "final_verdict": "",
         }
 
-        # ── Phase 2: Type + probability (only if landslide detected) ─────────
-        if (
-            phase1_result["label"] == "landslide"
-            and phase1_result["confidence"] >= config.PHASE1_THRESHOLD
-        ):
+        # ── Phase 2: Temporal forecast (only if landslide detected) ──────────
+        if is_landslide:
             if HMM_AVAILABLE:
                 p2 = classify_and_forecast(
                     self.hmm,
@@ -137,16 +141,16 @@ class LandslideIdentificationPipeline:
                     obs_sequence=obs_sequence,
                     n_forecast_steps=n_forecast_steps,
                 )
-                # Flatten for legacy consumers
                 p2_flat = {
-                    "landslide_type":        p2["current_type"],
+                    "landslide_type":        landslide_type,
+                    "phase1_type":           landslide_type,
+                    "hmm_type":              p2["current_type"],
                     "occurrence_probability": p2["occurrence_probability"],
                     "hidden_state":          p2["hidden_state"],
                     "peak_risk_month":       p2["peak_risk_month"],
                     "future_forecast":       p2["future_forecast"],
                     "risk_stats":            p2["risk_stats"],
                     "country":               p2["country"],
-                    # Legacy key for notebook 05 compatibility
                     "next_event_forecast": [
                         {
                             "most_likely_state": f["landslide_type"],
@@ -158,15 +162,18 @@ class LandslideIdentificationPipeline:
                 }
                 result["phase2"] = p2_flat
                 prob_pct = int(p2["occurrence_probability"] * 100)
+                conf_pct = int(phase1_result["confidence"] * 100)
                 result["final_verdict"] = (
                     f"LANDSLIDE DETECTED — "
-                    f"Type: {p2['current_type']} "
-                    f"(occurrence probability: {prob_pct}%)"
+                    f"Type: {landslide_type} (confidence: {conf_pct}%) "
+                    f"| Occurrence probability: {prob_pct}%"
                 )
             else:
+                conf_pct = int(phase1_result["confidence"] * 100)
                 result["final_verdict"] = (
                     f"LANDSLIDE DETECTED — "
-                    f"Phase 2 HMM offline. Confidence: {int(phase1_result['confidence']*100)}%"
+                    f"Type: {landslide_type} (confidence: {conf_pct}%) "
+                    f"| Phase 2 HMM offline"
                 )
         else:
             conf_pct = int(phase1_result["confidence"] * 100)
@@ -202,14 +209,15 @@ class LandslideIdentificationPipeline:
             try:
                 res = self.predict(img_path, country=country)
                 row = {
-                    "image_path":           res["image_path"],
-                    "phase1_label":         res["phase1"]["label"],
-                    "phase1_confidence":    res["phase1"]["confidence"],
-                    "phase1_landslide_prob": res["phase1"]["probabilities"]["landslide"],
-                    "phase2_type":          res["phase2"]["landslide_type"] if res["phase2"] else None,
-                    "phase2_probability":   res["phase2"]["occurrence_probability"] if res["phase2"] else None,
-                    "phase2_peak_month":    res["phase2"]["peak_risk_month"] if res["phase2"] else None,
-                    "verdict":              res["final_verdict"],
+                    "image_path":            res["image_path"],
+                    "phase1_label":          res["phase1"]["label"],
+                    "phase1_confidence":     res["phase1"]["confidence"],
+                    "phase1_is_landslide":   res["phase1"].get("is_landslide", False),
+                    "phase1_landslide_prob": res["phase1"].get("landslide_prob", 0),
+                    "phase2_type":           res["phase2"]["landslide_type"] if res["phase2"] else None,
+                    "phase2_probability":    res["phase2"]["occurrence_probability"] if res["phase2"] else None,
+                    "phase2_peak_month":     res["phase2"]["peak_risk_month"] if res["phase2"] else None,
+                    "verdict":               res["final_verdict"],
                 }
             except Exception as e:
                 row = {"image_path": img_path, "error": str(e)}
@@ -338,12 +346,16 @@ def main():
             country=args.country,
             n_forecast_steps=args.forecast,
         )
-        print("\n=== Prediction Result ===")
+        print("\n=== Prediction Result (Multi-Class) ===")
         p1 = result["phase1"]
         print(f"Phase 1 — {p1['label'].upper()} (confidence: {p1['confidence']*100:.1f}%)")
+        print(f"  Per-class probabilities:")
+        for cls, prob in p1["probabilities"].items():
+            marker = " <--" if cls == p1["label"] else ""
+            print(f"    {cls:>20s}: {prob*100:.2f}%{marker}")
         if result["phase2"]:
             p2 = result["phase2"]
-            print(f"Phase 2 — Type: {p2['landslide_type']}")
+            print(f"Phase 2 — Phase1 type: {p2['landslide_type']}, HMM type: {p2['hmm_type']}")
             print(f"         Occurrence probability: {p2['occurrence_probability']*100:.1f}%")
             print(f"         Peak risk month: {p2['peak_risk_month']}")
             print(f"         Future forecast:")

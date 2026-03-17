@@ -1,7 +1,9 @@
 """
-Ensemble predictor: weighted average of EfficientNet-B3 + AlexNet pretrained.
-Weights: 60% EfficientNet-B3 (calibrated) + 40% AlexNet pretrained.
-Optimal decision threshold: 0.597 (maximises F1 on test set).
+Ensemble predictor: weighted average of EfficientNet-B3 + ViT-B/16 (multi-class).
+Weights: 60% EfficientNet-B3 (calibrated) + 40% ViT-B/16.
+6-class output: non_landslide, rockfall, mudflow, debris_flow,
+                rotational_slide, translational_slide.
+Supports Test-Time Augmentation (TTA) for more robust predictions.
 """
 
 import os
@@ -17,6 +19,7 @@ from phase1_alexnet.dataset import get_test_transforms
 from phase1_alexnet.model import get_efficientnet_b3, get_vit_b_16
 from phase1_alexnet.train import load_checkpoint
 from utils.temperature_scaling import TemperatureScaler, load_temperature
+from utils.tta import predict_ensemble_with_tta
 
 
 def load_ensemble(device: torch.device = None):
@@ -52,38 +55,56 @@ def load_ensemble(device: torch.device = None):
     return scaler, vit_model, device
 
 
-def predict_ensemble(image_path: str, effnet_scaler, vit_model, device: torch.device) -> dict:
+def predict_ensemble(image_path: str, effnet_scaler, vit_model, device: torch.device,
+                     use_tta: bool = True, n_augments: int = 5) -> dict:
     """
-    Run ensemble prediction on a single image.
+    Run multi-class ensemble prediction on a single image.
+    Optionally uses Test-Time Augmentation (TTA) for more robust predictions.
 
     Returns dict with:
-      label, confidence, probabilities, effnet_landslide_prob, vit_landslide_prob
+      label (specific type), confidence, probabilities (all 6 classes),
+      is_landslide, landslide_prob, per-model probabilities.
     """
     img = cv2.imread(image_path)
     if img is None:
         raise FileNotFoundError(f"Could not read image: {image_path}")
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    transform_effnet = get_test_transforms(config.IMG_SIZE)
-    tensor_effnet = transform_effnet(img).unsqueeze(0).to(device)
+    if use_tta:
+        # TTA: average predictions over multiple augmented views
+        ensemble_probs, probs_effnet, probs_vit = predict_ensemble_with_tta(
+            effnet_scaler, vit_model, img, device,
+            effnet_img_size=config.IMG_SIZE, vit_img_size=config.VIT_IMG_SIZE,
+            effnet_weight=config.ENSEMBLE_WEIGHT_EFFNET,
+            vit_weight=config.ENSEMBLE_WEIGHT_ALEXNET,
+            n_augments=n_augments,
+        )
+    else:
+        # Standard single-pass prediction
+        transform_effnet = get_test_transforms(config.IMG_SIZE)
+        tensor_effnet = transform_effnet(img).unsqueeze(0).to(device)
 
-    transform_vit = get_test_transforms(config.VIT_IMG_SIZE)
-    tensor_vit = transform_vit(img).unsqueeze(0).to(device)
+        transform_vit = get_test_transforms(config.VIT_IMG_SIZE)
+        tensor_vit = transform_vit(img).unsqueeze(0).to(device)
 
-    with torch.no_grad():
-        probs_effnet = torch.softmax(effnet_scaler(tensor_effnet), dim=1)[0].cpu().numpy()
-        probs_vit   = torch.softmax(vit_model(tensor_vit),       dim=1)[0].cpu().numpy()
+        with torch.no_grad():
+            probs_effnet = torch.softmax(effnet_scaler(tensor_effnet), dim=1)[0].cpu().numpy()
+            probs_vit    = torch.softmax(vit_model(tensor_vit),        dim=1)[0].cpu().numpy()
 
-    # Weighted ensemble
-    ensemble_probs = (config.ENSEMBLE_WEIGHT_EFFNET * probs_effnet +
-                      config.ENSEMBLE_WEIGHT_ALEXNET * probs_vit)
+        # Weighted ensemble over all classes
+        ensemble_probs = (config.ENSEMBLE_WEIGHT_EFFNET * probs_effnet +
+                          config.ENSEMBLE_WEIGHT_ALEXNET * probs_vit)
 
-    landslide_prob = float(ensemble_probs[1])
-    # Use optimal threshold
-    label = "landslide" if landslide_prob >= config.PHASE1_THRESHOLD else "non_landslide"
-    confidence = landslide_prob if label == "landslide" else float(ensemble_probs[0])
+    # Multi-class: pick the highest-probability class
+    label_idx = int(np.argmax(ensemble_probs))
+    label = config.CLASS_NAMES[label_idx]
+    confidence = float(ensemble_probs[label_idx])
+    is_landslide = label != "non_landslide"
 
-    # Calculate probabilities for all classes dynamically
+    # Aggregate landslide probability (sum of all landslide sub-types)
+    landslide_prob = float(sum(ensemble_probs[i] for i in range(1, config.NUM_CLASSES)))
+
+    # Per-class probabilities
     probabilities = {
         config.CLASS_NAMES[i]: float(ensemble_probs[i])
         for i in range(config.NUM_CLASSES)
@@ -93,7 +114,12 @@ def predict_ensemble(image_path: str, effnet_scaler, vit_model, device: torch.de
         "label": label,
         "confidence": confidence,
         "probabilities": probabilities,
-        "effnet_landslide_prob":  float(probs_effnet[1]) if config.NUM_CLASSES == 2 else probs_effnet.tolist(),
-        "vit_landslide_prob": float(probs_vit[1]) if config.NUM_CLASSES == 2 else probs_vit.tolist(),
+        "is_landslide": is_landslide,
+        "landslide_prob": landslide_prob,
+        "landslide_type": label if is_landslide else None,
+        "effnet_probs": {config.CLASS_NAMES[i]: float(probs_effnet[i]) for i in range(config.NUM_CLASSES)},
+        "vit_probs": {config.CLASS_NAMES[i]: float(probs_vit[i]) for i in range(config.NUM_CLASSES)},
         "threshold_used": config.PHASE1_THRESHOLD,
+        "tta_enabled": use_tta,
+        "tta_augments": n_augments if use_tta else 0,
     }

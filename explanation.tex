@@ -47,115 +47,209 @@ If Phase 1 says, \textit{``Yes, there is a landslide here"}, Phase 2 wakes up.
     \item It calculates what type of landslide it is (like a Rockfall or a Mudslide), what triggered it (like Heavy Rain), and \textbf{predicts what will happen next month or next year}.
 \end{itemize}
 
-\section{Extended Dictionary: AI and Machine Learning Terms Used}
-If your guide asks you about the technical words in the project, you can use these simple definitions:
+\section{Extended AI/ML Terminology}
+This section provides a complete reference of every AI and Machine Learning term used in this project. Each term includes a simple definition, an analogy to help you understand, and how it is used in our landslide identification system.
 
-\begin{description}[leftmargin=!,labelwidth=\widthof{\textbf{Validation}}]
-    
-    \item[\textbf{Dataset}] 
-    \textbf{Definition:} A large collection of data (like images or text) used to teach the computer. \\
-    \textbf{Project Use:} We use a dataset of satellite images (from Zenodo) to teach Phase 1, and a dataset of past event records (from NASA) to teach Phase 2.
+% ── Group 1: Data Terms ─────────────────────────────────────────────────────
+\subsection{Data Terms}
 
-    \item[\textbf{Feature}] 
-    \textbf{Definition:} A specific detail or pattern in the data that helps the computer make a decision. \\
-    \textbf{Project Use:} In our images, features are things like the color of the dirt, the shape of the damage, or the missing vegetation. 
+\begin{description}[style=nextline, leftmargin=1.5cm]
 
-    \item[\textbf{Label}] 
-    \textbf{Definition:} The "answer" attached to a piece of data to teach the computer what it is looking at. \\
-    \textbf{Project Use:} If an image shows a rock falling, the label assigned is "Rockfall."
+    \item[\textbf{Dataset}]
+    \textbf{Simple Definition:} A large collection of data (images, numbers, or text) used to teach a computer.\\
+    \textbf{Analogy:} A textbook full of examples that a student studies from.\\
+    \textbf{Why it is used in this project:} We use two datasets: (1)~HR-GLDD satellite images from Zenodo (2,190 training + 550 validation + 699 test images) to teach Phase~1 what landslides look like, and (2)~the NASA Global Landslide Catalog (9,471 events across 141 countries over 28 years) to teach Phase~2 how landslide types follow each other over time.
 
-    \item[\textbf{Training}] 
-    \textbf{Definition:} The process of the computer practicing and learning from the Dataset. \\
-    \textbf{Project Use:} We train our model by showing it an image, letting it guess if it's a landslide, calculating its error, and correcting it to guess better next time.
+    \item[\textbf{Feature}]
+    \textbf{Simple Definition:} A specific detail or pattern in the data that helps the computer make a decision.\\
+    \textbf{Analogy:} When you identify a dog, the features you look at are ears, tail, fur --- the distinctive clues.\\
+    \textbf{Why it is used in this project:} In satellite images, features include the color of exposed soil, the shape of a scar on a hillside, missing vegetation, or debris patterns. The CNN in Phase~1 automatically learns which features matter most. In Phase~2, features are the landslide type code and the trigger code (e.g., heavy rain, earthquake).
 
-    \item[\textbf{Testing}] 
-    \textbf{Definition:} Testing the computer on new data it has never seen before, like giving a student a final exam. \\
-    \textbf{Project Use:} After the model is trained, we give it fresh satellite images to prove it works in real life.
-    
-    \item[\textbf{Validation}] 
-    \textbf{Definition:} A mini-test during training used to check how well the model is learning, like a mid-term quiz. \\
-    \textbf{Project Use:} We use validation images to tune the model's settings (Hyperparameters) without spoiling the final Testing data.
+    \item[\textbf{Label}]
+    \textbf{Simple Definition:} The correct answer attached to a piece of training data so the computer knows what it should learn.\\
+    \textbf{Analogy:} The answer key for a student's practice exam.\\
+    \textbf{Why it is used in this project:} Each satellite image is labeled with its class: ``non\_landslide'', ``rockfall'', ``mudflow'', ``debris\_flow'', ``rotational\_slide'', or ``translational\_slide''. The model compares its guess against the label and corrects itself when wrong.
 
-    \item[\textbf{Model}] 
-    \textbf{Definition:} The final "brain" or mathematical program that results after Training is complete. \\
-    \textbf{Project Use:} The Phase 1 model (EfficientNet + ViT) acts as the "eyes," and the Phase 2 model (HMM) acts as the "forecaster."
+    \item[\textbf{Training}]
+    \textbf{Simple Definition:} The process where the computer studies the dataset, makes guesses, receives corrections, and gradually gets better.\\
+    \textbf{Analogy:} A student doing practice problems and checking the answer key after each one.\\
+    \textbf{Why it is used in this project:} We train our CNN (Phase~1) by showing it images, letting it guess the class, computing how wrong it was (Loss), and adjusting its internal parameters to be less wrong next time. Training runs for 40 epochs. The HMM (Phase~2) is trained using the Baum--Welch algorithm on historical event sequences.
 
-    \item[\textbf{Loss}] 
-    \textbf{Definition:} A score that measures how \textit{wrong} the model is during Training. \\
-    \textbf{Project Use:} The model's goal during training is to make its "Loss" as close to zero as possible. Think of it like taking a golf swing—Loss is how far the ball is from the hole.
+    \item[\textbf{Testing}]
+    \textbf{Simple Definition:} Evaluating the trained model on brand-new data it has never seen before --- the final exam.\\
+    \textbf{Analogy:} A student sitting for the real exam after months of practice.\\
+    \textbf{Why it is used in this project:} After training is complete, we test on 699 unseen satellite images to measure how well the model performs in real-world conditions. The test set is \emph{never} used during training, ensuring an honest evaluation.
 
-    \item[\textbf{Accuracy}] 
-    \textbf{Definition:} The percentage of times the model makes the correct guess out of all its guesses. \\
-    \textbf{Project Use:} It tells us how reliable the overarching system is (e.g. 82.40\% accuracy means 82 correct guesses out of 100).
-
-    \item[\textbf{Precision}] 
-    \textbf{Definition:} When the model says it found a landslide, how often is it actually true? \\
-    \textbf{Project Use:} We use this to make sure the model isn't "crying wolf" and sending disaster teams to a mountain that is perfectly fine.
-
-    \item[\textbf{Recall}] 
-    \textbf{Definition:} Out of all the real landslides that exist, how many did the model find? \\
-    \textbf{Project Use:} This is very important for disaster relief. We want high recall so we don't accidentally ignore a real landslide.
-
-    \item[\textbf{F1 Score}] 
-    \textbf{Definition:} A balanced average between Precision and Recall. \\
-    \textbf{Project Use:} We use the F1 Score to pick the best model because it proves the model is great at both finding landslides and not making false alarms.
-
-    \item[\textbf{Confusion Matrix}] 
-    \textbf{Definition:} A simple 2x2 grid (or 6x6 for multi-class) showing where the model gets confused (True Positives, False Positives, etc.)  \\
-    \textbf{Project Use:} Used to see if the model is confusing "Rockfalls" with "Debris Flows", for example.
-
-    \item[\textbf{ROC Curve}] 
-    \textbf{Definition:} A graph showing how well the model separates the classes at different thresholds. \\
-    \textbf{Project Use:} Used to visualize if the model is truly learning the difference between a landslide and a normal hill, independent of cutoffs.
-    
-    \item[\textbf{Threshold}] 
-    \textbf{Definition:} The cutoff line used to make a decision (e.g. "I am 47\% sure this is a landslide"). \\
-    \textbf{Project Use:} We tested increasing the threshold to 0.70 to see if it reduces false alarms (raising Precision) at the cost of missing some landslides (lowering Recall).
-
-    \item[\textbf{Overfitting}] 
-    \textbf{Definition:} When the model memorizes the exact training images instead of learning the general patterns. \\
-    \textbf{Project Use:} If it overfits, it gets 100\% on the training data but fails completely on the test images. We use Dropout and Augmentation to prevent this.
-
-    \item[\textbf{Underfitting}] 
-    \textbf{Definition:} When the model fails to learn anything useful and just guesses randomly. \\
-    \textbf{Project Use:} If the model underfits, it means the architecture (like AlexNet) is too simple to understand complex satellite imagery.
-
-    \item[\textbf{Hyperparameters}] 
-    \textbf{Definition:} The master settings chosen by the human programmer before training begins (like the speed of learning or the size of the batch). \\
-    \textbf{Project Use:} We tune settings like Learning Rate and Epochs to get the highest Accuracy.
-    
-    \item[\textbf{Epoch}] 
-    \textbf{Definition:} One complete cycle of passing all the training data through the model.  \\
-    \textbf{Project Use:} We train our model over multiple epochs (e.g., 40 epochs). It's similar to a student reading a whole textbook 40 times to completely memorize the concepts.
-    
-    \item[\textbf{Batch Size}] 
-    \textbf{Definition:} How many images the model looks at simultaneously before updating its math. \\
-    \textbf{Project Use:} Using a batch size of 32 means the model processes 32 images at a time to speed up training on the GPU.
-    
-    \item[\textbf{Learning Rate}] 
-    \textbf{Definition:} How quickly or slowly the model updates its rules when it makes a mistake. \\
-    \textbf{Project Use:} We use a small learning rate (0.0001) for the classifier head so it slowly learns the differences between rockfalls and mudflows without breaking what it already knows.
-
-    \item[\textbf{Inference / Prediction}] 
-    \textbf{Definition:} Using the fully trained model to make an educated guess on brand new data. \\
-    \textbf{Project Use:} Phase 1 infers if an image contains a landslide. Phase 2 predicts what will happen in the future.
-
-    \item[\textbf{Classification}] 
-    \textbf{Definition:} Grouping data into specific buckets or categories. \\
-    \textbf{Project Use:} We classify the image into one of 6 buckets: Non-Landslide, Rockfall, Mudflow, Debris Flow, Rotational Slide, or Translational Slide.
-
-    \item[\textbf{Regression}] 
-    \textbf{Definition:} Predicting a continuous number instead of a category. \\
-    \textbf{Project Use:} We \textit{do not} use pure regression for the image output, but the occurrence probabilities calculated by the HMM are continuous numbers from 0\% to 100\%.
-
-    \item[\textbf{Feature Engineering}] 
-    \textbf{Definition:} Manually creating helpful data clues out of raw data to help the model learn. \\
-    \textbf{Project Use:} While Deep Learning (Phase 1) does this automatically, Phase 2 uses feature engineering by building 'Observation Sequences' from raw NASA trigger and date data.
-
-    \item[\textbf{Preprocessing}] 
-    \textbf{Definition:} Cleaning and preparing the raw data before feeding it to the computer. Like washing and chopping vegetables before cooking. \\
-    \textbf{Project Use:} We take large raw satellite data, crop it, resize the images to $300\times300$, and apply normalizations before the CNN sees them.
+    \item[\textbf{Validation}]
+    \textbf{Simple Definition:} A mini-test \emph{during} training used to monitor progress and tune settings, like a mid-term quiz.\\
+    \textbf{Analogy:} A mock exam that doesn't count for the final grade but tells the student where they need to improve.\\
+    \textbf{Why it is used in this project:} We use 550 validation images to check performance after each epoch. If validation accuracy improves, we save the model checkpoint. This prevents us from over-training (overfitting) and helps us pick the best epoch. Validation data is separate from both training and test data.
 
 \end{description}
+
+% ── Group 2: Model Terms ────────────────────────────────────────────────────
+\subsection{Model and Training Terms}
+
+\begin{description}[style=nextline, leftmargin=1.5cm]
+
+    \item[\textbf{Model}]
+    \textbf{Simple Definition:} The final trained ``brain'' --- a mathematical program that takes input data and produces predictions.\\
+    \textbf{Analogy:} A trained doctor who has studied thousands of X-rays and can now diagnose new patients.\\
+    \textbf{Why it is used in this project:} Phase~1 uses an ensemble of two models (EfficientNet-B3 + ViT-B/16) as the ``eyes'' that look at images. Phase~2 uses a Hidden Markov Model (HMM) as the ``forecaster'' that predicts future events.
+
+    \item[\textbf{Loss}]
+    \textbf{Simple Definition:} A number that measures how \emph{wrong} the model's predictions are. The goal of training is to make this number as small as possible.\\
+    \textbf{Analogy:} In a golf game, loss is how far the ball lands from the hole. Lower is better.\\
+    \textbf{Why it is used in this project:} We use Cross-Entropy Loss for Phase~1. After each batch of images, the loss tells the optimizer how to adjust the model's parameters. For Phase~2, the HMM uses log-likelihood (higher is better) which is the negative of loss.
+
+    \item[\textbf{Hyperparameters}]
+    \textbf{Simple Definition:} Settings chosen by the programmer \emph{before} training starts. Unlike regular parameters (which the model learns), hyperparameters are decisions made by humans.\\
+    \textbf{Analogy:} Before cooking, you decide the oven temperature and cooking time. These are not part of the recipe itself but affect the result.\\
+    \textbf{Why it is used in this project:} Key hyperparameters we set: Learning Rate = 0.0001, Batch Size = 32, Epochs = 40, Dropout = 0.5, HMM hidden states = 8, Phase~1 threshold = 0.467, Ensemble weights = 60\%/40\%. Changing these changes the model's performance.
+
+    \item[\textbf{Epoch}]
+    \textbf{Simple Definition:} One complete pass through the entire training dataset. If you have 2,190 images and a batch size of 32, one epoch = $\lceil 2190/32 \rceil = 69$ batches.\\
+    \textbf{Analogy:} Reading the entire textbook once from cover to cover. 40 epochs = reading it 40 times.\\
+    \textbf{Why it is used in this project:} We train for 40 epochs. In early epochs the model improves rapidly; later epochs bring diminishing returns. We save the checkpoint from the epoch with the best validation accuracy (e.g., epoch 24 for EfficientNet-B3).
+
+    \item[\textbf{Batch Size}]
+    \textbf{Simple Definition:} The number of training examples the model processes simultaneously before updating its parameters once.\\
+    \textbf{Analogy:} Instead of doing homework problems one by one, you do 32 at a time, then check all 32 answers together.\\
+    \textbf{Why it is used in this project:} We use batch size = 32. Larger batches train faster on GPU but use more memory. We reduced from 64 to 32 when switching to EfficientNet-B3 because the larger model needs more GPU memory per image.
+
+    \item[\textbf{Learning Rate}]
+    \textbf{Simple Definition:} How big a step the model takes when correcting its mistakes. Too high = overshoots and never converges. Too low = learns too slowly and gets stuck.\\
+    \textbf{Analogy:} Walking toward a target. A large learning rate means taking giant leaps (you might overshoot). A small one means tiny baby steps (slow but precise).\\
+    \textbf{Why it is used in this project:} We use LR = 0.0001 for the classifier head and 0.00001 for the pretrained feature layers (10$\times$ smaller). This is called differential learning rates --- we want the head to learn the new task quickly while the pretrained layers change only gently to preserve their existing knowledge.
+
+    \item[\textbf{Overfitting}]
+    \textbf{Simple Definition:} When the model memorizes the training data instead of learning general patterns. It scores perfectly on training images but fails on new, unseen images.\\
+    \textbf{Analogy:} A student who memorizes the exact answers to practice exams word-for-word but cannot solve a slightly different question on the real exam.\\
+    \textbf{Why it is used in this project:} With only 2,190 training images, overfitting is a real risk. We combat it with: Dropout (randomly turns off 50\% of neurons), data augmentation (flips, rotations, color changes), WeightedRandomSampler, and early stopping (saving the best checkpoint rather than training until the end).
+
+    \item[\textbf{Underfitting}]
+    \textbf{Simple Definition:} When the model is too simple to learn the patterns in the data. It performs poorly on \emph{both} training and test data.\\
+    \textbf{Analogy:} Trying to solve a calculus problem with only addition skills --- the tool is not powerful enough for the task.\\
+    \textbf{Why it is used in this project:} The original AlexNet (r0) with only 5 convolutional layers showed signs of underfitting on complex landslide patterns. This motivated upgrading to EfficientNet-B3 (r2) and ViT-B/16 (r5), which have deeper architectures capable of learning more complex visual features.
+
+\end{description}
+
+% ── Group 3: Evaluation Metrics ─────────────────────────────────────────────
+\subsection{Evaluation Metrics}
+
+\begin{description}[style=nextline, leftmargin=1.5cm]
+
+    \item[\textbf{Accuracy}]
+    \textbf{Simple Definition:} The percentage of all predictions that the model got correct.\\
+    \textbf{Formula:} Accuracy = $\frac{\text{Correct Predictions}}{\text{Total Predictions}} \times 100\%$\\
+    \textbf{Why it is used in this project:} Our best binary accuracy is 84.50\% (r5). However, accuracy alone can be misleading when classes are imbalanced --- a lazy model that always says ``no landslide'' would get 70\% accuracy because 70\% of our test images are non-landslide. That's why we also use Precision, Recall, and F1.
+
+    \item[\textbf{Precision}]
+    \textbf{Simple Definition:} When the model says ``landslide,'' how often is it actually correct? Measures the trustworthiness of positive predictions.\\
+    \textbf{Formula:} Precision = $\frac{\text{True Positives}}{\text{True Positives} + \text{False Positives}}$\\
+    \textbf{Analogy:} A fire alarm with high precision rarely gives false alarms.\\
+    \textbf{Why it is used in this project:} High precision means we don't waste emergency resources sending rescue teams to a mountain that is perfectly fine. Our best precision is 71.50\% (r5 binary).
+
+    \item[\textbf{Recall (Sensitivity)}]
+    \textbf{Simple Definition:} Out of all the real landslides that exist in the dataset, how many did the model successfully find?\\
+    \textbf{Formula:} Recall = $\frac{\text{True Positives}}{\text{True Positives} + \text{False Negatives}}$\\
+    \textbf{Analogy:} A fire alarm with high recall catches \emph{every} fire, even if it occasionally rings for burnt toast.\\
+    \textbf{Why it is used in this project:} \textbf{This is the most critical metric for disaster monitoring.} Missing a real landslide (low recall) means people don't get evacuated and may die. A false alarm (low precision) is inconvenient but not fatal. Our best recall is 81.20\% (r5 binary).
+
+    \item[\textbf{F1 Score}]
+    \textbf{Simple Definition:} A single number that balances Precision and Recall. If either is very low, F1 will be low too.\\
+    \textbf{Formula:} F1 = $2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}$\\
+    \textbf{Analogy:} Your overall grade that combines both ``accuracy of alarms'' and ``completeness of detection.''\\
+    \textbf{Why it is used in this project:} We use F1 as the primary metric to compare models across r0--r6. It ensures the model is good at \emph{both} finding landslides and not crying wolf. Best F1: 76.05\% (r5 binary), 71.68\% weighted (r6 multi-class).
+
+    \item[\textbf{Confusion Matrix}]
+    \textbf{Simple Definition:} A table that shows exactly where the model gets confused. Rows = actual classes, columns = predicted classes. Each cell counts how many times that combination occurred.\\
+    \textbf{Analogy:} A report card showing not just your overall grade but which specific questions you got right and wrong.\\
+    \textbf{Why it is used in this project:} In binary mode, it's a 2$\times$2 grid (TP, FP, FN, TN). In multi-class (r6), it's a 6$\times$6 grid that reveals, for example, that the model frequently confuses mudflow with debris flow (visually similar types). This tells us where to focus future improvements.
+
+    \item[\textbf{ROC Curve (Receiver Operating Characteristic)}]
+    \textbf{Simple Definition:} A graph plotting True Positive Rate (Recall) vs False Positive Rate at every possible threshold. The area under this curve (AUC) measures the model's fundamental ability to separate classes.\\
+    \textbf{Scale:} AUC = 0.50 means random guessing. AUC = 1.00 means perfect separation. Above 0.90 is excellent.\\
+    \textbf{Why it is used in this project:} ROC-AUC tells us the model's discriminative power independent of any threshold choice. Our best AUC is 91.50\% (r5), meaning the model correctly ranks landslide images above non-landslide images 91.5\% of the time. In r6, we use One-vs-Rest ROC for each of the 6 classes.
+
+    \item[\textbf{Threshold}]
+    \textbf{Simple Definition:} The confidence cutoff above which the model officially declares a positive prediction. Default is 50\%, but it can be tuned.\\
+    \textbf{Analogy:} The volume level at which a smoke detector triggers. Set it too high and it ignores real fires; set it too low and it rings whenever you cook toast.\\
+    \textbf{Why it is used in this project:} We scanned all possible thresholds and found that 0.467 (46.7\%) maximizes the F1 score for our ensemble. At this threshold we catch 78.67\% of real landslides (recall) while keeping false alarms manageable (precision = 68.03\%).
+
+\end{description}
+
+% ── Group 4: Prediction Terms ───────────────────────────────────────────────
+\subsection{Prediction and Task Types}
+
+\begin{description}[style=nextline, leftmargin=1.5cm]
+
+    \item[\textbf{Inference / Prediction}]
+    \textbf{Simple Definition:} Using the fully trained model to produce an answer on brand-new data it has never seen before. Training is the ``learning'' phase; inference is the ``doing'' phase.\\
+    \textbf{Analogy:} After years of medical school (training), a doctor examines a new patient and gives a diagnosis (inference).\\
+    \textbf{Why it is used in this project:} When you give the pipeline a new satellite image, Phase~1 performs inference to determine the landslide type (in under 1 second). Phase~2 then predicts future events by propagating the HMM transition matrix forward.
+
+    \item[\textbf{Classification}]
+    \textbf{Simple Definition:} A type of ML task where the model assigns input data to one of several predefined categories (classes).\\
+    \textbf{Analogy:} Sorting mail into bins labeled ``bills'', ``letters'', ``junk''.\\
+    \textbf{Why it is used in this project:} Phase~1 is a classification task. In binary mode (r0--r5) it classifies images into 2 categories: landslide or non-landslide. In multi-class mode (r6) it classifies into 6 categories: non\_landslide, rockfall, mudflow, debris\_flow, rotational\_slide, translational\_slide.
+
+    \item[\textbf{Regression}]
+    \textbf{Simple Definition:} A type of ML task where the model predicts a continuous number (not a category).\\
+    \textbf{Analogy:} Predicting tomorrow's temperature (27.3\textdegree C) rather than classifying the weather as ``hot'' or ``cold''.\\
+    \textbf{Why it is used in this project:} We do \emph{not} use pure regression for image classification, but Phase~2's occurrence probability is a continuous number between 0\% and 100\% computed from the HMM's log-likelihood via a sigmoid function. Temperature scaling also produces a continuous temperature parameter ($T = 1.1511$).
+
+    \item[\textbf{Feature Engineering}]
+    \textbf{Simple Definition:} The process of manually creating useful input variables from raw data to help the model learn. Requires domain expertise.\\
+    \textbf{Analogy:} A chef preparing ingredients (chopping, marinating, measuring spices) before cooking. The raw ingredients exist, but the preparation makes them useful.\\
+    \textbf{Why it is used in this project:} Phase~1 (CNN) does \emph{not} need manual feature engineering --- the neural network automatically discovers visual features from raw pixels. However, Phase~2 \emph{does} use feature engineering: we build observation sequences by encoding landslide type and trigger into numerical codes, grouping events by country, and sorting chronologically. In r3, we engineered a combined type$\times$trigger symbol (42 values) to give the HMM richer observations.
+
+    \item[\textbf{Preprocessing}]
+    \textbf{Simple Definition:} Cleaning and preparing raw data before feeding it to the model. Raw data is often messy, inconsistent, or in the wrong format.\\
+    \textbf{Analogy:} Washing and chopping vegetables before cooking --- you can't throw a whole potato into a soup.\\
+    \textbf{Why it is used in this project:} For Phase~1: we convert raw numpy arrays to JPEG images, resize to 300$\times$300 (EfficientNet) or 224$\times$224 (ViT), apply data augmentation (flips, rotations, color jitter, Gaussian blur), and normalize pixel values using ImageNet statistics. For Phase~2: we clean the NASA CSV, filter incomplete records, encode categorical fields (type, trigger) into integers, and build per-country temporal sequences.
+
+\end{description}
+
+% ── Summary Table ───────────────────────────────────────────────────────────
+\newpage
+\section{Quick Reference Table: All Terms at a Glance}
+
+\begin{center}
+\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\textwidth}{@{}lXX@{}}
+\toprule
+\textbf{Term} & \textbf{One-Line Definition} & \textbf{How We Use It} \\
+\midrule
+Dataset        & Collection of data used for teaching        & HR-GLDD images (Phase~1) + NASA GLC events (Phase~2) \\
+Feature        & A detail/pattern that helps decide           & Soil color, scar shape (images); type code (HMM) \\
+Label          & The correct answer for training data         & 6 class names: non\_landslide, rockfall, etc. \\
+Training       & Computer learning from data                  & 40 epochs on 2,190 images + Baum--Welch on 9,471 events \\
+Testing        & Final exam on unseen data                    & 699 test images never seen during training \\
+Validation     & Mid-term check during training               & 550 images to pick best epoch \\
+Model          & Trained mathematical brain                   & EfficientNet-B3 + ViT-B/16 (Phase~1); HMM (Phase~2) \\
+Loss           & How wrong the model is                       & Cross-Entropy Loss (Phase~1); neg. log-likelihood (Phase~2) \\
+Accuracy       & \% of correct predictions                    & Best: 84.50\% (r5 binary) \\
+Precision      & How trustworthy positive predictions are     & Best: 71.50\% (r5 binary) \\
+Recall         & How many real positives were found            & Best: 81.20\% (r5 binary) --- most critical metric \\
+F1 Score       & Balance of Precision and Recall              & Best: 76.05\% (r5 binary), 71.68\% weighted (r6) \\
+Confusion Matrix & Table of correct vs incorrect by class     & 2$\times$2 (binary) or 6$\times$6 (multi-class) \\
+ROC Curve      & Separability at all thresholds               & Best AUC: 91.50\% (r5) \\
+Threshold      & Confidence cutoff for positive decision      & Optimized to 0.467 for best F1 \\
+Overfitting    & Memorizing training data                     & Prevented with Dropout, augmentation, early stopping \\
+Underfitting   & Model too simple to learn                    & AlexNet (r0) $\to$ EfficientNet (r2) $\to$ ViT (r5) \\
+Hyperparameters & Human-chosen settings before training       & LR=0.0001, batch=32, epochs=40, HMM states=8 \\
+Epoch          & One full pass through training data          & 40 epochs; best checkpoint at epoch 24 \\
+Batch Size     & Images processed per update step             & 32 (reduced from 64 for larger models) \\
+Learning Rate  & Step size for error correction               & 0.0001 (head), 0.00001 (features) \\
+Inference      & Using trained model on new data              & $<$1 second per satellite image \\
+Classification & Assigning data to categories                 & 6-class: non\_ls, rockfall, mudflow, debris, rot, trans \\
+Regression     & Predicting continuous numbers                & Occurrence probability (0--100\%), temperature $T$ \\
+Feature Eng.   & Manually crafting input variables            & type$\times$trigger = 42 HMM symbols \\
+Preprocessing  & Cleaning/preparing raw data                  & Resize, augment, normalize images; encode NASA CSV \\
+\bottomrule
+\end{tabularx}
+\end{center}
 
 \end{document}
