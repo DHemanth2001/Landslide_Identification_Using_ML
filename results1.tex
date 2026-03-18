@@ -20,6 +20,21 @@
 \noindent\textbf{GPU:} NVIDIA RTX 2000 Ada Generation \\
 \textbf{Environment:} conda landslide-ml (PyTorch cu124, Python 3.10) \\
 
+\section{Motivation: Why Re-evaluate the AlexNet Baseline?}
+
+Results 0 established the raw AlexNet + HMM pipeline but lacked context on how this approach compares to prior landslide detection research. Before moving to more complex architectures, it is important to understand:
+
+\begin{enumerate}
+    \item \textbf{Where r0 stands relative to existing methods:}\\
+          The r0 baseline achieved 78.54\% accuracy and 67.67\% F1-score. Without benchmarking against traditional approaches (SVM, Random Forest, NDVI-based methods), we cannot quantify whether the CNN-HMM pipeline is already an improvement or still lagging behind established techniques.
+
+    \item \textbf{Identifying AlexNet's specific weaknesses:}\\
+          The r0 results revealed a precision of only 62.06\% (96 false positives out of 488 non-landslide images) and 54 false negatives. AlexNet's shallow architecture (only 5 convolutional layers) and small 227$\times$227 receptive field limit its ability to capture fine-grained spatial textures that distinguish landslide scars from visually similar terrain (e.g., ploughed fields, construction sites). This analysis directly motivates the move to deeper architectures in subsequent experiments.
+
+    \item \textbf{Confirming the dual-phase design is sound:}\\
+          The CNN-HMM integration worked correctly end-to-end. Phase 1 detects, Phase 2 classifies and forecasts. This validated architecture can now serve as a stable foundation --- future iterations only need to improve Phase 1's detection model without redesigning the entire pipeline.
+\end{enumerate}
+
 \section{Comparison with Previous Research Models}
 The baseline AlexNet implementation provides an automated image classification integrated with temporal forecasting (HMM). Unlike conventional systems that solely utilize vegetation indices (e.g., NDVI) or require manual feature engineering utilizing Support Vector Machines (SVM) or Random Forests on static satellite maps, this dual-phase CNN-HMM architecture dynamically merges direct visual anomaly detection with historic probabilistic occurrence patterns. However, AlexNet's shallow architecture (compared to modern deep ResNet/U-Net topologies) limits spatial precision, necessitating deeper network testing in subsequent iterations to improve recall rates.
 

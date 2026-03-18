@@ -20,6 +20,21 @@
 \noindent\textbf{GPU:} NVIDIA RTX 2000 Ada Generation \\
 \textbf{Environment:} conda landslide-ml (PyTorch cu124, Python 3.10) \\
 
+\section{Motivation: Why Add Temperature Calibration and HMM Improvements?}
+
+The r2 results (EfficientNet-B3) showed strong metric improvements (accuracy 79.97\%, recall 78.20\%) but revealed two issues that metrics alone do not capture:
+
+\begin{enumerate}
+    \item \textbf{Overconfident predictions undermine trust:}\\
+          EfficientNet-B3's softmax outputs were systematically overconfident --- predicting 95\% confidence on images where the true accuracy was closer to 75\%. In a disaster monitoring system, overconfident false positives trigger unnecessary evacuations, and overconfident false negatives give dangerous false assurance. Temperature scaling corrects this \textit{without changing any predictions}, making the confidence scores reliable for downstream decision-making (e.g., ``if confidence $>$ 80\%, auto-alert; if 50--80\%, flag for human review'').
+
+    \item \textbf{The HMM was too simplistic for real-world patterns:}\\
+          The r0--r2 HMM used only 4 hidden states and 7 observation symbols (landslide type only). Real landslide dynamics depend heavily on the \textit{trigger mechanism} (rainfall, earthquake, construction) --- not just the type. Expanding to 8 hidden states and 42 observation symbols (type $\times$ trigger) allows the HMM to model finer-grained regimes such as ``monsoon-triggered debris flows'' vs ``earthquake-triggered rockfalls'', producing more actionable forecasts.
+
+    \item \textbf{The 50\% threshold was too conservative:}\\
+          With calibrated probabilities, the old 50\% decision boundary was unnecessarily conservative. Lowering it to 40\% passes more borderline cases to Phase 2 for full risk analysis. In disaster monitoring, the cost of a missed landslide (false negative) far outweighs the cost of a false alarm --- so a lower threshold is operationally justified.
+\end{enumerate}
+
 \section{Improvements Implemented}
 
 \begin{enumerate}

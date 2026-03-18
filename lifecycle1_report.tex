@@ -1,0 +1,198 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{xcolor}
+
+\definecolor{bestgreen}{RGB}{200,240,200}
+
+\title{Landslide Identification Using ML \\ \large Lifecycle 1 Report: Foundation \& Baseline Models}
+\author{M.Tech Project}
+\date{2026-03-18}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================================
+\section{Objective}
+% ============================================================================
+
+The goal of Lifecycle 1 is to establish the foundational pipeline for automated landslide identification from satellite imagery. This involves:
+
+\begin{enumerate}
+    \item Designing a dual-phase architecture: Phase 1 (CNN-based image classification) + Phase 2 (HMM-based temporal risk forecasting).
+    \item Establishing a performance baseline using a simple CNN (AlexNet).
+    \item Investigating whether transfer learning and modern architectures (EfficientNet-B3) can improve detection accuracy on a small satellite imagery dataset.
+    \item Building an end-to-end pipeline from raw satellite image to landslide risk report.
+\end{enumerate}
+
+% ============================================================================
+\section{Dataset Description}
+% ============================================================================
+
+\subsection{Phase 1: HR-GLDD (High Resolution Global Landslide Detection Dataset)}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{lcccc}
+        \toprule
+        \textbf{Split} & \textbf{Landslide} & \textbf{Non-Landslide} & \textbf{Total} & \textbf{Usage} \\
+        \midrule
+        Train      & 616   & 1,574 & 2,190 & Model training \\
+        Validation & 158   & 392   & 550   & Hyperparameter tuning \\
+        Test       & 211   & 488   & 699   & Final evaluation \\
+        \midrule
+        \textbf{Total} & \textbf{985} & \textbf{2,454} & \textbf{3,439} & \\
+        \bottomrule
+    \end{tabular}
+    \caption{HR-GLDD dataset splits. Source: Zenodo 7189381. Images are optical satellite imagery converted from 4-band numpy arrays to 3-band RGB JPEG.}
+\end{table}
+
+\noindent \textbf{Key challenge:} The dataset is imbalanced --- 72\% non-landslide vs 28\% landslide. The training set contains only 2,190 images, which is small for deep learning.
+
+\subsection{Phase 2: NASA Global Landslide Catalog (GLC)}
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Records:} 9,471 landslide events (1988--2016)
+    \item \textbf{Coverage:} 141 countries
+    \item \textbf{Sequences:} 112 country-level temporal sequences, 9,442 total observations
+    \item \textbf{Features:} Landslide type, trigger mechanism, location, date
+\end{itemize}
+
+% ============================================================================
+\section{Methodology}
+% ============================================================================
+
+\subsection{Dual-Phase Architecture}
+
+The pipeline consists of two independent phases:
+
+\begin{enumerate}
+    \item \textbf{Phase 1 --- CNN Image Classification:} A convolutional neural network classifies each satellite image as \textit{landslide} or \textit{non-landslide} and outputs a confidence score.
+    \item \textbf{Phase 2 --- HMM Temporal Forecasting:} If Phase 1 detects a landslide, the geographic context (country) is passed to a Hidden Markov Model trained on the NASA GLC. The HMM predicts the landslide type, occurrence probability, peak risk month, and future risk forecast.
+\end{enumerate}
+
+\noindent This separation allows each component to be improved independently in subsequent lifecycles.
+
+\subsection{Result 0 (r0): AlexNet Trained from Scratch}
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Architecture:} AlexNet --- 5 convolutional layers + 3 fully connected layers
+    \item \textbf{Input:} 227$\times$227 RGB images
+    \item \textbf{Training:} 30 epochs, batch size 64, LR = 0.0001, StepLR scheduler (step=10, gamma=0.1)
+    \item \textbf{Parameters:} $\sim$62M (all trained from scratch)
+    \item \textbf{Best epoch:} 13 (val\_acc = 78.55\%)
+    \item \textbf{HMM:} 4 hidden states, 7 observation symbols (landslide type only)
+    \item \textbf{Rationale:} AlexNet is a simple, well-understood architecture that serves as a performance floor. Any subsequent changes must demonstrably beat this baseline to justify added complexity.
+\end{itemize}
+
+\subsection{Result 1 (r1): AlexNet with Transfer Learning}
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Architecture:} AlexNet pretrained on ImageNet (1.2M images)
+    \item \textbf{Modification:} Final classifier layer replaced for 2-class output. Feature layers frozen initially, then unfrozen for fine-tuning.
+    \item \textbf{Rationale:} With only 2,190 training images, training from scratch forces the model to learn basic visual features (edges, textures) from very limited data. Transfer learning provides a rich feature foundation from ImageNet, allowing the model to focus on learning landslide-specific patterns.
+\end{itemize}
+
+\subsection{Result 2 (r2): EfficientNet-B3 with Transfer Learning}
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Architecture:} EfficientNet-B3 --- compound-scaled CNN with 26+ convolutional blocks
+    \item \textbf{Input:} 300$\times$300 RGB images (native resolution, 74\% more pixels than AlexNet's 227$\times$227)
+    \item \textbf{Training:} Feature layers frozen for first 5 epochs (warm-up), then fully unfrozen with differential learning rates (head: 1e-4, features: 1e-5). CosineAnnealingLR scheduler.
+    \item \textbf{Parameters:} $\sim$12M (5$\times$ fewer than AlexNet despite being far deeper)
+    \item \textbf{Best epoch:} 24 (val\_acc = 79.82\%)
+    \item \textbf{HMM:} Upgraded to 6 hidden states
+    \item \textbf{Rationale:} AlexNet's shallow architecture (5 conv layers) cannot capture fine-grained spatial textures. EfficientNet-B3 uses compound scaling (depth $\times$ width $\times$ resolution) for superior feature extraction with fewer parameters.
+\end{itemize}
+
+% ============================================================================
+\section{Results}
+% ============================================================================
+
+\subsection{Metrics Comparison}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{llccccc}
+        \toprule
+        \textbf{Result} & \textbf{Architecture} & \textbf{Acc (\%)} & \textbf{Prec (\%)} & \textbf{Rec (\%)} & \textbf{F1 (\%)} & \textbf{AUC (\%)} \\
+        \midrule
+        r0 & AlexNet (scratch) & 78.54 & 62.06 & 74.41 & 67.67 & 85.53 \\
+        r1 & AlexNet (pretrained) & 80.11 & 66.67 & 67.30 & 66.98 & 85.73 \\
+        \rowcolor{bestgreen}
+        \textbf{r2} & \textbf{EfficientNet-B3} & \textbf{79.97} & \textbf{63.71} & \textbf{78.20} & \textbf{70.21} & \textbf{88.93} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Lifecycle 1 test set metrics (binary classification, 699 images).}
+\end{table}
+
+\subsection{Confusion Matrices}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{l|cc|cc|cc}
+        \toprule
+         & \multicolumn{2}{c|}{\textbf{r0 (AlexNet)}} & \multicolumn{2}{c|}{\textbf{r1 (Pretrained)}} & \multicolumn{2}{c}{\textbf{r2 (EfficientNet)}} \\
+         & Pred: No & Pred: Yes & Pred: No & Pred: Yes & Pred: No & Pred: Yes \\
+        \midrule
+        Actual: No LS & 392 & 96 & --- & --- & 394 & 94 \\
+        Actual: LS    & 54  & 157 & --- & --- & 46  & 165 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Confusion matrices for r0 and r2. r1 confusion matrix not recorded separately.}
+\end{table}
+
+% ============================================================================
+\section{Analysis}
+% ============================================================================
+
+\subsection{What Worked}
+
+\begin{enumerate}
+    \item \textbf{Transfer learning significantly helps on small datasets:} AlexNet pretrained (r1) improved accuracy by +1.57\% over training from scratch, despite identical architecture.
+    \item \textbf{EfficientNet-B3 dramatically improved recall:} Recall jumped from 74.41\% (r0) to 78.20\% (r2) --- 8 fewer missed landslides. For disaster monitoring, high recall is critical because a missed landslide can cost lives.
+    \item \textbf{ROC-AUC improved substantially:} From 85.53\% to 88.93\% (+3.4\%), indicating the model's ranking ability is much better.
+    \item \textbf{Dual-phase design works:} Phase 1 (CNN) and Phase 2 (HMM) integrate cleanly, producing actionable risk reports from raw satellite images.
+\end{enumerate}
+
+\subsection{Identified Weaknesses}
+
+\begin{enumerate}
+    \item \textbf{Overconfident predictions:} EfficientNet-B3 outputs softmax probabilities that are systematically overconfident --- predicting 95\% confidence on images where true accuracy is only $\sim$75\%. This makes confidence scores unreliable for operational decision-making.
+    \item \textbf{Single-model limitations:} Each model has systematic blind spots. EfficientNet-B3 has high recall but lower precision (63.71\%); 94 false positives suggest the model is too aggressive. A single architecture cannot cover all failure modes.
+    \item \textbf{Simplistic HMM:} With only 4--6 hidden states and 7 observation symbols (landslide type only), the HMM cannot distinguish between different trigger mechanisms (rainfall vs earthquake vs construction). This limits the quality of temporal forecasts.
+    \item \textbf{Fixed 50\% threshold:} The default decision boundary is arbitrary and may not be optimal for the ensemble probability distribution.
+\end{enumerate}
+
+% ============================================================================
+\section{Lifecycle 2 Preview}
+% ============================================================================
+
+Based on the weaknesses identified in Lifecycle 1, the next lifecycle will address three specific gaps:
+
+\begin{enumerate}
+    \item \textbf{Confidence Calibration (Temperature Scaling):}\\
+          The overconfident softmax outputs from r2 make it impossible to set meaningful confidence thresholds for operational deployment (e.g., ``auto-alert if confidence $>$ 80\%''). Temperature scaling (Guo et al., ICML 2017) will be applied as a post-hoc calibration step to make confidence scores match true empirical accuracy.
+
+    \item \textbf{Ensemble Methods:}\\
+          Since EfficientNet-B3 and AlexNet make different types of errors, combining their predictions via weighted averaging should suppress individual model errors. We will also explore replacing AlexNet with a Vision Transformer (ViT-B/16) to create a CNN-Transformer hybrid ensemble that covers both local texture features (CNN) and global spatial relationships (Transformer).
+
+    \item \textbf{Richer HMM Observations:}\\
+          The current HMM observes only landslide type (7 symbols). By combining type with trigger mechanism into a single observation symbol (type $\times$ trigger = 42 symbols), the HMM can model finer-grained regimes such as ``monsoon-triggered debris flows'' vs ``earthquake-triggered rockfalls''.
+\end{enumerate}
+
+\noindent These improvements target calibration, model diversity, and temporal modeling --- the three weakest aspects of the current pipeline.
+
+\end{document}

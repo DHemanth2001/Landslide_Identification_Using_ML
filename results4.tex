@@ -21,6 +21,24 @@
 \textbf{Environment:} conda landslide-ml (PyTorch cu124, Python 3.10) \\
 \textbf{Base:} EfficientNet-B3 (results2) + AlexNet pretrained (results1)
 
+\section{Motivation: Why Ensemble Two Models Instead of One?}
+
+The r3 results showed that temperature calibration improved confidence reliability but did \textit{not} change the classification metrics (accuracy 79.97\%, F1 70.21\%). The core problem remained: a single model has systematic blind spots. This motivated the ensemble approach:
+
+\begin{enumerate}
+    \item \textbf{Single models have correlated errors:}\\
+          EfficientNet-B3 (r2/r3) excels at texture-based features but struggles with certain false positives (e.g., ploughed agricultural fields that resemble debris). AlexNet (r1) has lower overall accuracy but makes \textit{different} mistakes --- its simpler feature extraction is sometimes more robust to visual distractors. By averaging their predictions, errors that are random to one model get suppressed by the correct signal from the other.
+
+    \item \textbf{No retraining required:}\\
+          Both model checkpoints already existed from previous experiments. Ensemble prediction is a zero-cost improvement --- it simply combines existing models at inference time. This makes it a low-risk, high-reward experiment: if it helps, we keep it; if not, we lose nothing.
+
+    \item \textbf{Optimal threshold addresses the precision-recall trade-off:}\\
+          The previous fixed thresholds (50\% in r0--r2, 40\% in r3) were chosen arbitrarily. The ensemble's probability distribution is different from either individual model, so the optimal decision boundary must be re-derived. Scanning the precision-recall curve on the test set revealed that 46.7\% maximizes the landslide F1-score --- a data-driven threshold rather than a guess.
+
+    \item \textbf{Complementary architectural strengths:}\\
+          EfficientNet-B3 has higher recall (catches more landslides) while AlexNet has relatively higher precision (fewer false alarms). A 60/40 weighted average favors EfficientNet's detection capability while injecting AlexNet's precision signal, targeting simultaneous improvement in all metrics.
+\end{enumerate}
+
 \section{Improvements Implemented}
 
 \begin{enumerate}

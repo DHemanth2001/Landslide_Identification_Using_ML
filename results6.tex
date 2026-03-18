@@ -30,6 +30,25 @@
 \textbf{Classification:} Binary (landslide vs non\_landslide) --- direct improvement over r5
 
 % ============================================================================
+\section{Motivation: Why Focal Loss, TTA, and Grad-CAM After r5?}
+% ============================================================================
+
+The r5 ensemble (EfficientNet-B3 + ViT-B/16) achieved the best metrics to date (accuracy 84.55\%, F1 75.98\%, AUC 91.50\%), but analysis of its failure cases revealed three distinct gaps --- each addressed by a targeted improvement:
+
+\begin{enumerate}
+    \item \textbf{Class imbalance was silently hurting recall (Focal Loss):}\\
+          The training set contains 1,574 non-landslide images (72\%) vs only 616 landslide images (28\%). Standard Cross-Entropy Loss treats every training sample equally, so the model sees $2.5\times$ more ``no landslide'' examples per epoch. This biases gradient updates toward the majority class, causing the model to be conservative about predicting landslides. The r5 confusion matrix still had 40 false negatives (missed landslides) --- many of these were borderline cases where the model defaulted to the majority class. Focal Loss directly targets this problem by down-weighting easy, correctly-classified examples and forcing the model to focus on these hard borderline cases.
+
+    \item \textbf{Single-pass inference is fragile for satellite imagery (TTA):}\\
+          Satellite images have no canonical orientation --- a landslide viewed from the north looks different from the same scene rotated 90\textdegree. The r5 pipeline processed each image exactly once, meaning prediction quality depended on the arbitrary orientation of the satellite capture. Analysis of r5 false negatives revealed several cases where the landslide confidence was just below the 46.7\% threshold (e.g., 44--46\%). Averaging predictions across multiple augmented views (flips, rotations) smooths out orientation-dependent noise and rescues these borderline cases.
+
+    \item \textbf{No way to verify \textit{why} the model made a prediction (Grad-CAM):}\\
+          Through r0--r5, the pipeline was a complete black box: it output a probability but gave no indication of \textit{which image regions} influenced the decision. For a safety-critical disaster warning system, this is unacceptable --- response teams need to verify that the model is looking at actual landslide features (exposed soil, debris scars) rather than spurious correlations (cloud shadows, sensor artifacts). Grad-CAM provides this visual verification layer without modifying the model or its predictions.
+\end{enumerate}
+
+\noindent Crucially, these three improvements target \textit{different pipeline stages} (training, inference, post-prediction) and are fully independent --- each can be enabled or disabled without affecting the others, making this a modular upgrade.
+
+% ============================================================================
 \section{Improvements Implemented}
 % ============================================================================
 

@@ -1,0 +1,205 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{xcolor}
+
+\title{Lifecycle 1 --- Q\&A Preparation \\ \large Questions Your Guide Will Ask}
+\author{Study Reference}
+\date{2026-03-18}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Basic Concepts (Foundation Questions)}
+% ============================================================================
+
+\subsection{Q: What is a Convolutional Neural Network (CNN)?}
+
+A CNN is a neural network designed for images. It slides small filters (kernels) across the image to detect patterns:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Early layers} detect simple features: edges, corners, color gradients
+    \item \textbf{Middle layers} detect textures: soil patterns, vegetation edges
+    \item \textbf{Deep layers} detect complex objects: landslide scars, debris trails
+\end{itemize}
+
+\textbf{Key operation --- Convolution:} A 3$\times$3 filter slides across the image, multiplying pixel values by filter weights and summing them. This produces a ``feature map'' highlighting where that pattern appears.
+
+\textbf{Why CNNs for images:} They exploit \textit{spatial locality} (nearby pixels are related) and \textit{weight sharing} (same filter applied everywhere), making them efficient for image data.
+
+\subsection{Q: What is backpropagation?}
+
+Backpropagation is how the network \textit{learns}:
+
+\begin{enumerate}[noitemsep]
+    \item \textbf{Forward pass:} Image goes through network, produces prediction
+    \item \textbf{Loss calculation:} Compare prediction with true label (Cross-Entropy Loss)
+    \item \textbf{Backward pass:} Calculate how much each weight contributed to the error (chain rule)
+    \item \textbf{Weight update:} Adjust weights to reduce error (optimizer like Adam/SGD)
+\end{enumerate}
+
+\textbf{Analogy:} A student takes an exam (forward pass), gets a score (loss), sees which answers were wrong (backward pass), and studies those topics more (weight update).
+
+\subsection{Q: What is softmax?}
+
+Softmax converts raw network outputs (logits) into probabilities that sum to 1:
+\[
+\text{softmax}(z_i) = \frac{e^{z_i}}{\sum_j e^{z_j}}
+\]
+
+\textbf{Example:} Logits $[2.0, 0.5]$ for [non-landslide, landslide]:
+\[
+P(\text{non-landslide}) = \frac{e^{2.0}}{e^{2.0} + e^{0.5}} = \frac{7.39}{9.04} = 81.7\%
+\]
+
+The class with highest probability is the prediction.
+
+\subsection{Q: What is Cross-Entropy Loss?}
+
+Measures how wrong the prediction is:
+\[
+\text{CE} = -\log(p_{\text{true class}})
+\]
+
+\begin{itemize}[noitemsep]
+    \item Model predicts 90\% for correct class: loss = $-\log(0.9) = 0.105$ (low, good)
+    \item Model predicts 10\% for correct class: loss = $-\log(0.1) = 2.302$ (high, bad)
+\end{itemize}
+
+The network minimizes this during training.
+
+\subsection{Q: What is the difference between accuracy, precision, recall, F1?}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{lp{10cm}}
+        \toprule
+        \textbf{Metric} & \textbf{What it measures} \\
+        \midrule
+        \textbf{Accuracy} & Out of ALL images, how many did we classify correctly? \\
+        \textbf{Precision} & Out of all images we \textit{flagged as landslide}, how many actually were? (Low = too many false alarms) \\
+        \textbf{Recall} & Out of all \textit{actual landslides}, how many did we catch? (Low = missed landslides = \textbf{dangerous}) \\
+        \textbf{F1-Score} & Harmonic mean of precision and recall. Balances both. \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{Why recall matters most:} A missed landslide can cost lives. A false alarm only wastes resources.
+
+\subsection{Q: What is ROC-AUC?}
+
+\begin{itemize}[noitemsep]
+    \item \textbf{ROC curve:} Plot of True Positive Rate vs False Positive Rate at every threshold
+    \item \textbf{AUC:} Area Under this Curve (0.5 = random, 1.0 = perfect)
+    \item \textbf{Meaning:} AUC = 85.53\% means the model ranks a random landslide image higher than a random non-landslide image 85.53\% of the time
+\end{itemize}
+
+\textbf{Why not just accuracy?} With 72\% non-landslide images, always predicting ``no landslide'' gives 72\% accuracy but catches zero landslides. AUC and F1 are not fooled by this.
+
+% ============================================================================
+\section{Architecture Questions}
+% ============================================================================
+
+\subsection{Q: Why did you start with AlexNet?}
+
+\begin{enumerate}[noitemsep]
+    \item \textbf{Baseline:} Need a performance floor. Every improvement must beat this.
+    \item \textbf{Simple and fast:} Trains quickly, lets us verify the entire pipeline works end-to-end
+    \item \textbf{Historical significance:} AlexNet (2012) started the deep learning revolution
+\end{enumerate}
+
+\subsection{Q: What is transfer learning? Why does it help?}
+
+Using a model pre-trained on ImageNet (1.2M images) and fine-tuning on our 2,190 images.
+
+\textbf{Why:} ImageNet teaches edges, textures, shapes. Our small dataset only needs to teach landslide-specific patterns. Without it, the model must learn everything from too few images.
+
+\textbf{Analogy:} Hiring an experienced photographer and teaching them landslides, vs training someone who has never seen a photo.
+
+\subsection{Q: What is EfficientNet's compound scaling?}
+
+Traditional models scale only depth OR width OR resolution. EfficientNet scales all three:
+\begin{itemize}[noitemsep]
+    \item Depth $= \alpha^\phi$ (more layers)
+    \item Width $= \beta^\phi$ (more filters per layer)
+    \item Resolution $= \gamma^\phi$ (larger input images)
+\end{itemize}
+
+Result: EfficientNet-B3 achieves better accuracy than AlexNet with \textbf{5$\times$ fewer parameters} (12M vs 62M).
+
+\subsection{Q: Why EfficientNet-B3 accuracy (79.97\%) is lower than pretrained AlexNet (80.11\%) but you say it's better?}
+
+Because accuracy alone is misleading. Look at the full picture:
+\begin{itemize}[noitemsep]
+    \item \textbf{Recall:} 78.20\% vs 67.30\% --- EfficientNet catches \textbf{11\% more landslides}
+    \item \textbf{F1-Score:} 70.21\% vs 66.98\% --- better precision-recall balance
+    \item \textbf{ROC-AUC:} 88.93\% vs 85.73\% --- much better ranking ability
+\end{itemize}
+
+AlexNet pretrained had higher accuracy by being overly conservative (predicting non-landslide more often). EfficientNet is more aggressive at detecting landslides, which is what we want.
+
+% ============================================================================
+\section{HMM Questions}
+% ============================================================================
+
+\subsection{Q: What is an HMM? How does it work?}
+
+A Hidden Markov Model models sequences where the true state is ``hidden'':
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Hidden states:} True landslide regime (Shallow Slide, Deep Slide, Debris Flow, Rockfall) --- can't observe directly
+    \item \textbf{Observations:} What we see --- landslide type recorded in NASA catalog
+    \item \textbf{Transition matrix:} Probability of moving between states (e.g., after shallow slide, 30\% chance of debris flow)
+    \item \textbf{Emission matrix:} Probability of observing a type given the hidden state
+\end{itemize}
+
+\subsection{Q: What is the Baum-Welch algorithm?}
+
+An iterative training algorithm for HMMs (like EM algorithm):
+\begin{enumerate}[noitemsep]
+    \item \textbf{E-step:} Estimate which hidden states are most likely given current parameters
+    \item \textbf{M-step:} Update transition/emission matrices to best explain the estimated states
+    \item Repeat until convergence (log-likelihood stops improving)
+\end{enumerate}
+
+We ran 100 iterations, reaching log-likelihood of $-7314.96$.
+
+\subsection{Q: Why did you choose 4 hidden states for the HMM?}
+
+Four states map to the major landslide regimes in geotechnical literature: Shallow Landslide, Deep Landslide, Debris Flow, Rockfall. This was later increased to 8 states in LC2 to capture finer distinctions (monsoon-triggered vs earthquake-triggered events).
+
+% ============================================================================
+\section{Dataset Questions}
+% ============================================================================
+
+\subsection{Q: Isn't 2,190 images too small for deep learning?}
+
+Yes, which is exactly why we use transfer learning (ImageNet pre-training provides a foundation). The small dataset size motivated several design choices:
+\begin{itemize}[noitemsep]
+    \item Transfer learning instead of training from scratch
+    \item Data augmentation during training (random flips, rotations, color jitter)
+    \item WeightedRandomSampler to handle class imbalance
+    \item Ensemble methods to maximize performance from limited data
+\end{itemize}
+
+\subsection{Q: Why binary classification instead of multi-class?}
+
+Binary (landslide vs non-landslide) provides a clean signal for measuring detection capability. Multi-class was attempted in LC3 and dropped to 71.67\% accuracy due to insufficient per-class samples. Binary classification is the pragmatic first step.
+
+\subsection{Q: How did you split the data?}
+
+The HR-GLDD dataset comes pre-split: 2,190 train / 550 validation / 699 test. We did NOT create our own splits --- this ensures reproducibility and fair comparison with other papers using the same dataset.
+
+\end{document}

@@ -260,3 +260,5 @@ def load_checkpoint(path: str, model: nn.Module, optimizer=None) -> int:
 
 if __name__ == "__main__":
     model, history = run_training()
+    from utils.plot_utils import plot_training_history
+    plot_training_history(history, save_path=os.path.join(config.PLOTS_DIR, "training_history.png"))

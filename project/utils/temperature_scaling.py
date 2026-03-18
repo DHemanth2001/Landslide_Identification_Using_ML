@@ -98,7 +98,7 @@ def save_temperature(T: float, path: str = None) -> None:
     if path is None:
         path = os.path.join(config.CHECKPOINTS_DIR, "temperature.pt")
     torch.save({"temperature": T}, path)
-    print(f"Temperature saved → {path}")
+    print(f"Temperature saved -> {path}")
 
 
 def load_temperature(path: str = None) -> float:

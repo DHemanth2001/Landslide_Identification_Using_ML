@@ -21,6 +21,21 @@
 \noindent\textbf{GPU:} NVIDIA RTX 2000 Ada Generation \\
 \textbf{Environment:} conda landslide-ml (PyTorch cu124, Python 3.10) \\
 
+\section{Motivation: Why AlexNet + HMM as the Baseline?}
+
+This is the first experiment (r0) in the landslide identification pipeline. The architecture choices were driven by the following reasoning:
+
+\begin{enumerate}
+    \item \textbf{AlexNet as a starting point:}\\
+          AlexNet is one of the simplest and most well-understood deep CNN architectures (5 convolutional layers + 3 fully connected layers). Starting with a lightweight model allows us to establish a \textit{performance floor} --- any subsequent architectural change must demonstrably beat this baseline to justify its added complexity. Additionally, AlexNet's small parameter count ($\sim$62M) and fast training time make it ideal for rapid prototyping on the HR-GLDD dataset (2,190 training images).
+
+    \item \textbf{HMM for temporal risk modeling:}\\
+          Satellite image classification alone answers ``is there a landslide here?'' but not ``what type is it, and how likely is it to recur?'' A Hidden Markov Model trained on the NASA Global Landslide Catalog (9,471 events across 141 countries) adds a temporal dimension by learning transition probabilities between landslide regimes. This dual-phase (CNN + HMM) design separates visual detection from probabilistic forecasting, allowing each component to be improved independently.
+
+    \item \textbf{Binary classification to keep it simple:}\\
+          Before attempting multi-class landslide type classification, a binary (landslide vs non-landslide) formulation provides a clean signal for measuring detection capability. Precision, recall, and F1-score have direct operational meaning: a missed landslide (false negative) could cost lives, while a false alarm (false positive) wastes resources.
+\end{enumerate}
+
 \section{Architecture Flowchart}
 \begin{center}
     \resizebox{0.9\textwidth}{!}{

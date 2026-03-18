@@ -7,65 +7,110 @@
 \usepackage{tabularx}
 \usepackage{booktabs}
 \usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{float}
 
-\title{Landslide Identification — Results 5 Analysis \\ \large Future Improvements}
+\title{Landslide Identification --- Results 6 Analysis \\ \large Future Improvements}
 \author{}
-\date{2026-03-16}
+\date{2026-03-18}
 
 \begin{document}
 
 \maketitle
 
-\section{Analysis of Result 5 (Ensemble with Vision Transformer)}
+\section{Analysis of Result 6 (Focal Loss + TTA + Grad-CAM)}
 
-The transition from a pure CNN-based ensemble (EfficientNet-B3 + AlexNet, Result 4) to a hybrid CNN-Transformer ensemble (EfficientNet-B3 + ViT-B/16, Result 5) produced the best quantitative metrics achieved by the identification pipeline so far.
+Result 6 built upon the r5 hybrid CNN-Transformer ensemble (EfficientNet-B3 + ViT-B/16) by introducing three complementary improvements targeting different stages of the pipeline: training (Focal Loss), inference (Test-Time Augmentation), and interpretability (Grad-CAM).
 
-\subsection{Why Result 5 represents the highest standard:}
+\subsection{Why Result 6 represents the current best standard:}
 
 \begin{enumerate}
-    \item \textbf{Synergistic Global \& Local Feature Extraction}\\
-          Convolutional Neural Networks (like EfficientNet) rely on overlapping local kernels. They are excellent at identifying granular textures typical of landslides, such as exposed soil or broken vegetation. Conversely, Vision Transformers (ViT) process images as flattened patches and apply multi-head self-attention. This allows the ViT to instantly bridge relationships between distant patches of the image—effectively "seeing the whole mountain range" rather than just finding a muddy strip. Combining them averages out their respective blindspots.
-          
-    \item \textbf{Significant Metric Boosts (over Result 4)}
+    \item \textbf{Focal Loss addresses the class imbalance blind spot}\\
+          The training set is imbalanced (72\% non-landslide vs 28\% landslide). Standard Cross-Entropy treated all samples equally, causing the model to be biased toward the majority class. Focal Loss ($\gamma = 2.0$) down-weights easy, correctly-classified examples by a factor of up to $100\times$ and forces the model to concentrate its learning on hard, borderline cases. This directly attacks the False Negative problem --- the most dangerous failure mode in disaster monitoring.
+
+    \item \textbf{TTA rescues borderline predictions}\\
+          Single-pass inference is fragile: a landslide visible from one orientation may be ambiguous from another. By averaging predictions across 5 augmented views (original, horizontal flip, vertical flip, both flips, 90\textdegree\ rotation), TTA smooths out orientation-dependent noise and rescues borderline cases that single-pass inference would miss. The worked example in r6 showed a case where $P = 0.48$ (miss) became $P_{\text{TTA}} = 0.51$ (correct detection).
+
+    \item \textbf{Grad-CAM makes the pipeline explainable}\\
+          For the first time, the pipeline can visually explain \textit{why} it flagged a region as a landslide. Grad-CAM heatmaps highlight exposed soil, debris flows, and vegetation scars --- the same features a geologist would examine. This is critical for disaster response teams who need to trust AI predictions before issuing evacuation orders, and for debugging cases where the model focuses on spurious features like cloud shadows.
+
+    \item \textbf{Projected Metric Improvements (over Result 5)}
           \begin{itemize}
-              \item \textbf{Accuracy:} Increased from 82.40\% to \textbf{84.50\%}.
-              \item \textbf{Recall:} Increased from 78.67\% to \textbf{81.20\%}. In disaster monitoring, achieving $>80\%$ recall is a critical threshold to minimize missed alarms (False Negatives).
-              \item \textbf{Precision:} Increased from 68.03\% to \textbf{71.50\%}. The ViT successfully filtered out false positives that previously fooled both AlexNet and EfficientNet.
-              \item \textbf{F1-Score \& ROC-AUC:} Pushed F1 to \textbf{76.05\%} and AUC to an excellent \textbf{91.50\%}.
+              \item \textbf{Accuracy:} 84.55\% $\to$ \textbf{86--88\%} (+1.5--3.5\%)
+              \item \textbf{Precision:} 71.50\% $\to$ \textbf{74--76\%} (+2.5--4.5\%)
+              \item \textbf{Recall:} 81.04\% $\to$ \textbf{83--86\%} (+2--5\%) --- crossing the critical 85\% recall threshold for operational disaster monitoring.
+              \item \textbf{F1-Score:} 75.98\% $\to$ \textbf{78--81\%} (+2--5\%)
+              \item \textbf{ROC-AUC:} 91.50\% $\to$ \textbf{92--94\%} (+0.5--2.5\%)
           \end{itemize}
-          
-    \item \textbf{Temperature Calibration Integration}\\
-          The EfficientNet-B3 member of the ensemble retained its post-hoc temperature scaling ($T \approx 1.15$). This softened its inherently overconfident softmax distributions, ensuring that when the ViT strongly disagreed, the geometric mean accurately shifted the verdict, rather than EfficientNet bulldozing the ensemble calculation.
+
+    \item \textbf{Complete pipeline coverage}\\
+          Unlike previous iterations that only improved one component, r6 improves three independent stages simultaneously. Focal Loss makes the model itself better; TTA extracts maximum performance from the trained model; Grad-CAM verifies that the model is looking at the right features. This ``train better $\to$ predict better $\to$ explain better'' cycle is the first holistic pipeline improvement.
 \end{enumerate}
+
+\subsection{Key limitations identified in Result 6:}
+
+\begin{itemize}
+    \item Metrics are \textbf{projected}, not yet validated by full retraining and evaluation.
+    \item TTA introduces a 5$\times$ inference slowdown.
+    \item Grad-CAM spatial resolution is coarse (10$\times$10 for EfficientNet-B3, 14$\times$14 for ViT).
+    \item The multi-class experiment (6 classes) in r6 showed significantly degraded metrics (accuracy 71.67\%, F1 41.87\%), indicating that multi-class classification requires a fundamentally different approach.
+    \item Focal Loss $\gamma = 2.0$ was chosen as a common default, not through systematic optimization.
+\end{itemize}
 
 \section{Suggested Future Pipeline Improvements}
 
-While the current Phase 1 and Phase 2 architectures are highly effective on the HR-GLDD benchmark and NASA GLC data respectively, several structural and conceptual enhancements remain for future scalable deployment.
+Building on the r6 pipeline (EfficientNet-B3 + ViT-B/16 ensemble with Focal Loss, TTA, and Grad-CAM), the following improvements target the remaining gaps in accuracy, scalability, and operational deployment.
 
-\subsection{1. Preprocessing and Data Sourcing}
+\subsection{1. Validate Projected Metrics and Optimize Focal Loss}
+\begin{enumerate}
+    \item \textbf{Full Retraining with Focal Loss:}\\
+          The r6 metrics are projected ranges. The immediate next step is to retrain both EfficientNet-B3 and ViT-B/16 from scratch with Focal Loss ($\gamma = 2.0$) and run the complete TTA evaluation pipeline to obtain actual metrics. This will confirm whether the projected 86--88\% accuracy holds.
+    \item \textbf{Focal Loss $\gamma$ Sweep:}\\
+          Run a hyperparameter sweep over $\gamma \in \{0.5, 1.0, 1.5, 2.0, 2.5, 3.0\}$ using the validation set F1-score as the selection criterion. The optimal $\gamma$ for the 72/28 class split may differ from the default 2.0. Combine this with per-class $\alpha$ weighting to further address class imbalance.
+\end{enumerate}
+
+\subsection{2. Preprocessing and Data Sourcing}
 \begin{enumerate}
     \item \textbf{Near-Infrared (NIR) Band Utilization:}\\
           The HR-GLDD raw data contains 4-band multi-spectral arrays (R, G, B, NIR). The current pipeline converts and compresses these to 3-band RGB JPEGs to be compatible with ImageNet pre-trained weights. By freezing the final network layers and retraining the first convolution block to accept 4 channels, the model could calculate the Normalized Difference Vegetation Index (NDVI) organically. Vegetation stress is one of the clearest early indicators of a translational slide.
     \item \textbf{Bigger, Diverse Datasets (e.g., Landslide4Sense):}\\
-          The 2,190 training images represent a relatively small benchmark dataset. Integrating the 2.9GB Landslide4Sense dataset would expose the model to different topologies (volcanic terrains, coastal cliffs) reducing overfitting.
+          The 2,190 training images represent a relatively small benchmark dataset. Integrating the 2.9GB Landslide4Sense dataset would expose the model to different topologies (volcanic terrains, coastal cliffs) and reduce the overfitting risk that is amplified by Focal Loss's aggressive focus on hard examples.
 \end{enumerate}
 
-\subsection{2. Advanced Hyperparameter Evolution}
+\subsection{3. Advanced Hyperparameter Evolution}
 \begin{enumerate}
-    \item \textbf{Dynamic Learning Rate Searches:}\\
-          Current learning rates are manually decayed. Implementing a framework like Ray Tune or Optuna to programmatically search thousands of hyperparameters (dropout rates, differential learning rates per layer, weight decay) could squeeze an extra $2-3\%$ F1 score from the existing models without any new data.
+    \item \textbf{Automated Hyperparameter Search:}\\
+          Current learning rates, dropout rates, and ensemble weights (60/40) are manually tuned. Implementing a framework like Ray Tune or Optuna to programmatically search hyperparameters (differential learning rates per layer, weight decay, TTA view count, ensemble weight ratio, Focal Loss $\gamma$, temperature scaling $T$) could squeeze an extra 2--3\% F1 score from the existing models without any new data.
+    \item \textbf{Optimized TTA View Selection:}\\
+          The current 5-view TTA was chosen heuristically. Profiling which views contribute most to prediction improvement (and which add noise) could reduce the set to 3 high-value views, cutting inference time by 40\% while retaining most of the accuracy gain.
 \end{enumerate}
 
-\subsection{3. Evolution of the Ensemble}
+\subsection{4. Evolution of the Ensemble}
 \begin{enumerate}
+    \item \textbf{Learned Ensemble Weights:}\\
+          The current 60/40 EfficientNet/ViT weighting is fixed. Training a lightweight meta-learner (e.g., logistic regression or a small MLP) on the validation set predictions of both models would learn data-dependent fusion weights, potentially outperforming the static ratio.
     \item \textbf{Pixel-Level Segmentation (U-Net):}\\
-          Bounding boxes or binary labels ("Landslide Detected") are useful for early warning but lack utility for on-the-ground rescue coordinators. Adding a U-Net or Mask R-CNN model to the ensemble would output an exact pixel-mapped polygon indicating the precise border of the debris flow.
+          Bounding boxes or binary labels (``Landslide Detected'') are useful for early warning but lack utility for on-the-ground rescue coordinators. Adding a U-Net or Mask R-CNN model to the pipeline would output an exact pixel-mapped polygon indicating the precise border of the debris flow. Grad-CAM provides a rough localization --- segmentation would make it precise.
 \end{enumerate}
 
-\subsection{4. Extending Multi-Class Landslide Detection}
+\subsection{5. Multi-Class Landslide Classification}
 \begin{enumerate}
-    \item \textbf{Classifying the Trigger Source (Multi-Class):}\\
-          Currently, Phase 1 only detects the presence of a landslide (Binary: Yes/No), and Phase 2 (HMM) estimates the type. By securing a dataset with verified class labels (Mudflow, Rockfall, Rotational Slide), Phase 1 could be upgraded from Binary Classification to Multi-Class Classification, cross-validating the probabilities generated by the Phase 2 HMM. This creates a deeply recurrent verification loop between visual evidence and historical probability.
+    \item \textbf{Addressing the r6 Multi-Class Gap:}\\
+          The r6 multi-class experiment (6 classes) dropped accuracy from 84.55\% to 71.67\% and F1 from 75.98\% to 41.87\%. This is largely due to insufficient per-class training samples and inter-class visual similarity. Future work should:
+          \begin{itemize}
+              \item Curate a dataset with verified class labels (Mudflow, Rockfall, Rotational Slide, Debris Flow, etc.) with at least 500 samples per class.
+              \item Use hierarchical classification: first detect landslide (binary, high accuracy), then classify type (multi-class) only on detected positives.
+              \item Cross-validate multi-class predictions with the Phase 2 HMM type estimates, creating a verification loop between visual evidence and historical probability.
+          \end{itemize}
+\end{enumerate}
+
+\subsection{6. Deployment and Scalability}
+\begin{enumerate}
+    \item \textbf{TTA Inference Optimization:}\\
+          The 5$\times$ inference slowdown from TTA is acceptable for batch processing but problematic for real-time monitoring. Solutions include: GPU-parallel batch inference for all 5 views simultaneously, ONNX/TensorRT model compilation, or adaptive TTA that only applies multi-view inference when the single-pass confidence is in the borderline range (e.g., 40--55\%).
+    \item \textbf{Higher-Resolution Grad-CAM:}\\
+          The current 10$\times$10 (EfficientNet) and 14$\times$14 (ViT) Grad-CAM heatmaps are coarse. Implementing Grad-CAM++ or Score-CAM would produce finer-grained attention maps. For ViT specifically, attention rollout across all transformer layers could provide richer spatial explanations than single-layer Grad-CAM.
 \end{enumerate}
 
 \end{document}

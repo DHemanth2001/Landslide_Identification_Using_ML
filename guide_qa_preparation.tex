@@ -1,0 +1,372 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{xcolor}
+
+\title{Landslide Identification Using ML \\ \large Guide Q\&A Preparation --- Concepts You Must Know}
+\author{Study Reference}
+\date{2026-03-18}
+
+\begin{document}
+
+\maketitle
+
+\noindent This document covers the questions your guide is most likely to ask during each lifecycle presentation. Study this alongside your results files. Each answer is written in simple language so you can explain confidently.
+
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Basic Deep Learning Concepts (Asked in any lifecycle)}
+% ============================================================================
+
+\subsection{Q: What is a Convolutional Neural Network (CNN)?}
+
+A CNN is a type of neural network designed for images. It works by sliding small filters (kernels) across the image to detect patterns:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Early layers} detect simple features: edges, corners, color gradients
+    \item \textbf{Middle layers} detect textures: soil patterns, vegetation edges
+    \item \textbf{Deep layers} detect complex objects: landslide scars, debris trails
+\end{itemize}
+
+\textbf{Key operation --- Convolution:} A 3$\times$3 filter slides across the image, multiplying pixel values by filter weights and summing them. This produces a ``feature map'' highlighting where that pattern appears. Stacking many filters at each layer lets the network detect many different patterns simultaneously.
+
+\textbf{Why CNNs work for images:} They exploit \textit{spatial locality} (nearby pixels are related) and \textit{weight sharing} (the same filter is applied everywhere), making them efficient for image data.
+
+\subsection{Q: What is backpropagation?}
+
+Backpropagation is how the network \textit{learns}. After making a prediction:
+
+\begin{enumerate}[noitemsep]
+    \item \textbf{Forward pass:} Image goes through the network, produces a prediction
+    \item \textbf{Loss calculation:} Compare prediction with true label (e.g., Cross-Entropy Loss)
+    \item \textbf{Backward pass:} Calculate how much each weight contributed to the error (using the chain rule of calculus)
+    \item \textbf{Weight update:} Adjust weights to reduce the error (using an optimizer like Adam or SGD)
+\end{enumerate}
+
+\textbf{Simple analogy:} A student takes an exam (forward pass), gets a score (loss), sees which answers were wrong (backward pass), and studies those topics more (weight update).
+
+\subsection{Q: What is softmax?}
+
+Softmax converts raw network outputs (logits) into probabilities that sum to 1:
+
+\[
+\text{softmax}(z_i) = \frac{e^{z_i}}{\sum_j e^{z_j}}
+\]
+
+\textbf{Example:} If the network outputs logits $[2.0, 0.5]$ for [non-landslide, landslide]:
+\[
+P(\text{non-landslide}) = \frac{e^{2.0}}{e^{2.0} + e^{0.5}} = \frac{7.39}{7.39 + 1.65} = 0.817
+\]
+\[
+P(\text{landslide}) = \frac{e^{0.5}}{e^{2.0} + e^{0.5}} = \frac{1.65}{9.04} = 0.183
+\]
+
+So the model predicts 81.7\% non-landslide, 18.3\% landslide. The class with the highest probability is the prediction.
+
+\subsection{Q: What is Cross-Entropy Loss?}
+
+Cross-Entropy Loss measures how wrong the prediction is:
+
+\[
+\text{CE} = -\log(p_{\text{true class}})
+\]
+
+\begin{itemize}[noitemsep]
+    \item If model predicts 90\% for the correct class: $-\log(0.9) = 0.105$ (low loss, good)
+    \item If model predicts 10\% for the correct class: $-\log(0.1) = 2.302$ (high loss, bad)
+\end{itemize}
+
+The network minimizes this loss during training, which pushes it to predict high probabilities for the correct class.
+
+\subsection{Q: What is the difference between accuracy, precision, recall, F1?}
+
+Think of it as a landslide detection alarm system:
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{lp{10cm}}
+        \toprule
+        \textbf{Metric} & \textbf{What it measures} \\
+        \midrule
+        \textbf{Accuracy} & Out of ALL images, how many did we classify correctly? \\
+        \textbf{Precision} & Out of all images we \textit{flagged as landslide}, how many actually were? (Low precision = too many false alarms) \\
+        \textbf{Recall} & Out of all \textit{actual landslides}, how many did we catch? (Low recall = missed landslides = \textbf{dangerous}) \\
+        \textbf{F1-Score} & Harmonic mean of precision and recall. Balances both. \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{Why recall matters most in our project:} A missed landslide (false negative) can cost lives. A false alarm (false positive) only wastes resources. So we favor recall over precision.
+
+\subsection{Q: What is ROC-AUC?}
+
+ROC-AUC measures the model's \textit{ranking ability} across all possible thresholds:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{ROC curve:} Plot of True Positive Rate (recall) vs False Positive Rate at every threshold from 0 to 1
+    \item \textbf{AUC:} Area Under this Curve. Ranges from 0.5 (random guessing) to 1.0 (perfect)
+    \item \textbf{Interpretation:} AUC = 91.50\% means if you randomly pick one landslide image and one non-landslide image, the model will rank the landslide image higher 91.50\% of the time
+\end{itemize}
+
+\textbf{Why not just accuracy?} Accuracy is misleading on imbalanced datasets. If 72\% of images are non-landslide, a model that always predicts ``no landslide'' gets 72\% accuracy but catches zero landslides. AUC and F1 are not fooled by this.
+
+% ============================================================================
+\section{Lifecycle 1 Questions}
+% ============================================================================
+
+\subsection{Q: Why did you start with AlexNet and not a newer model?}
+
+\begin{enumerate}[noitemsep]
+    \item \textbf{Establish a baseline:} We needed a performance floor. Any improvement must beat this to justify added complexity.
+    \item \textbf{Simple and fast:} AlexNet trains quickly, letting us verify the entire pipeline (data loading, training, evaluation, HMM integration) works end-to-end before investing in expensive models.
+    \item \textbf{Historical context:} AlexNet (2012) started the deep learning revolution in computer vision. Starting here shows the progression of the field.
+\end{enumerate}
+
+\subsection{Q: What is transfer learning? Why does it help?}
+
+Transfer learning means using a model pre-trained on a large dataset (ImageNet, 1.2M images) and fine-tuning it on our small dataset (2,190 images).
+
+\textbf{Why it helps:}
+\begin{itemize}[noitemsep]
+    \item ImageNet pre-training teaches the model to see edges, textures, shapes, colors --- universal visual features
+    \item Our small dataset only needs to teach landslide-specific patterns (exposed soil, debris scars)
+    \item Without transfer learning, the model must learn \textit{everything} from 2,190 images --- not enough data
+\end{itemize}
+
+\textbf{Analogy:} Transfer learning is like hiring an experienced photographer (ImageNet) and teaching them to identify landslides, vs training someone who has never seen a photo before.
+
+\subsection{Q: What is EfficientNet's compound scaling?}
+
+Traditional models scale only one dimension (deeper OR wider OR higher resolution). EfficientNet scales all three simultaneously using a compound coefficient $\phi$:
+
+\begin{itemize}[noitemsep]
+    \item Depth: $d = \alpha^\phi$ (more layers)
+    \item Width: $w = \beta^\phi$ (more filters per layer)
+    \item Resolution: $r = \gamma^\phi$ (larger input images)
+\end{itemize}
+
+The key insight: scaling all three together is more efficient than scaling just one. EfficientNet-B3 achieves better accuracy than AlexNet with \textbf{5$\times$ fewer parameters} (12M vs 62M).
+
+\subsection{Q: What is an HMM? How does it work?}
+
+A Hidden Markov Model (HMM) models sequences where the true state is ``hidden'' and we can only observe symptoms:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Hidden states:} The true landslide regime (e.g., Shallow Rain Slide, Deep Seismic Slide) --- we can't observe these directly
+    \item \textbf{Observations:} What we can see --- the landslide type and trigger recorded in the NASA catalog
+    \item \textbf{Transition matrix:} Probability of moving from one state to another (e.g., after a shallow slide, 30\% chance of debris flow next)
+    \item \textbf{Emission matrix:} Probability of observing a certain type given the hidden state
+\end{itemize}
+
+\textbf{Training (Baum-Welch algorithm):} An iterative algorithm (like EM) that adjusts the transition and emission matrices to maximize the likelihood of the observed sequences. It alternates between:
+\begin{enumerate}[noitemsep]
+    \item E-step: Estimate which hidden states are most likely given current parameters
+    \item M-step: Update parameters to best explain the estimated states
+\end{enumerate}
+
+\textbf{Prediction (Viterbi algorithm):} Finds the most likely sequence of hidden states for a given observation sequence.
+
+% ============================================================================
+\section{Lifecycle 2 Questions}
+% ============================================================================
+
+\subsection{Q: What is temperature scaling? Why T = 1.1511?}
+
+\textbf{Problem:} Neural networks are often overconfident. The model might say ``95\% landslide'' when it's actually only correct 75\% of the time.
+
+\textbf{Solution:} Divide logits by a temperature $T$ before softmax:
+\[
+\hat{q}_i = \frac{\exp(z_i / T)}{\sum_j \exp(z_j / T)}
+\]
+
+\begin{itemize}[noitemsep]
+    \item $T > 1$: Softens the distribution (reduces overconfidence) --- our case, $T = 1.1511$
+    \item $T < 1$: Sharpens the distribution (increases confidence)
+    \item $T = 1$: No change (standard softmax)
+\end{itemize}
+
+\textbf{How T was found:} We optimized $T$ on the validation set by minimizing negative log-likelihood using L-BFGS optimizer. The optimal value was $T = 1.1511$.
+
+\textbf{Why it doesn't change accuracy:} Temperature scaling divides ALL logits by the same $T$. The highest logit remains the highest (argmax doesn't change), so the predicted class is identical. Only the magnitude of probabilities changes.
+
+\subsection{Q: Why ensemble? Why 60/40 and not 50/50?}
+
+\textbf{Why ensemble:}
+Two models make different mistakes. When EfficientNet is confused about an image, AlexNet might be confident (and correct), and vice versa. Averaging their predictions cancels out random errors.
+
+\textbf{Why 60/40:}
+EfficientNet-B3 is the stronger model (higher F1, higher AUC). Giving it 60\% weight means it dominates the decision when both models agree, but AlexNet's 40\% signal can still override when EfficientNet is wrong. If we used 50/50, we'd give too much weight to the weaker model.
+
+\textbf{If asked ``why not learn the weights?'':} That's a valid future improvement (mentioned in LC3). For now, 60/40 was a simple heuristic that worked well. Learning optimal weights via a meta-learner on the validation set could squeeze out more performance.
+
+\subsection{Q: What is a Vision Transformer (ViT)? How is it different from CNN?}
+
+\textbf{CNN:} Processes images using local sliding filters. Each filter sees only a small patch (e.g., 3$\times$3 pixels). Global context is built up gradually through many layers.
+
+\textbf{ViT:} Splits the image into patches (16$\times$16 pixels each), flattens them into vectors, and processes them with self-attention. Every patch can ``attend to'' every other patch from the very first layer.
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{lll}
+        \toprule
+        & \textbf{CNN} & \textbf{Vision Transformer} \\
+        \midrule
+        Receptive field & Local (grows with depth) & Global (from layer 1) \\
+        Good at & Textures, edges, local patterns & Spatial relationships, context \\
+        Weakness & Misses global context & May miss fine textures \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\textbf{Why combining them works:} CNN catches ``this patch has exposed soil'' (local). ViT catches ``the debris trail runs from mountaintop to valley'' (global). Together they cover each other's blind spots.
+
+\subsection{Q: What is self-attention?}
+
+Self-attention lets each image patch look at every other patch and decide which ones are important:
+
+\begin{enumerate}[noitemsep]
+    \item Each patch is converted into three vectors: Query ($Q$), Key ($K$), Value ($V$)
+    \item Attention score: $\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right) V$
+    \item High attention score = ``these two patches are related''
+\end{enumerate}
+
+\textbf{Example:} A patch showing debris at the bottom of a hill attends strongly to a patch showing a scar at the top --- the model understands they're part of the same landslide, even though they're far apart in the image.
+
+\subsection{Q: Why did ViT give a bigger improvement than AlexNet in the ensemble?}
+
+Because CNN + CNN share the same type of errors (both use local convolutions), while CNN + Transformer have \textbf{different inductive biases}:
+
+\begin{itemize}[noitemsep]
+    \item r4 (EfficientNet + AlexNet): Both are CNNs. When one fails on a global-context image, the other likely fails too. F1 = 72.97\%
+    \item r5 (EfficientNet + ViT): Different architectures. When CNN fails on global context, ViT succeeds. When ViT misses fine texture, CNN catches it. F1 = 75.98\% (+3.01\%)
+\end{itemize}
+
+\textbf{Key lesson:} In ensembles, \textit{diversity of architecture} matters more than \textit{number of models}.
+
+% ============================================================================
+\section{Lifecycle 3 Questions}
+% ============================================================================
+
+\subsection{Q: Why Focal Loss instead of just oversampling the minority class?}
+
+Both address class imbalance but differently:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Oversampling:} Duplicates minority class images. Risk: model memorizes the duplicated images (overfitting). We already use WeightedRandomSampler in the dataloader.
+    \item \textbf{Focal Loss:} Doesn't change the data --- it changes the loss function. Down-weights easy examples (regardless of class) and up-weights hard examples. This is smarter because it focuses on the \textit{difficulty} of each sample, not just which class it belongs to.
+\end{itemize}
+
+\textbf{They can be combined:} We use both WeightedRandomSampler (data-level) and Focal Loss (loss-level) for maximum effect.
+
+\subsection{Q: Why $\gamma = 2.0$ for Focal Loss?}
+
+$\gamma$ controls how aggressively easy examples are down-weighted:
+
+\begin{itemize}[noitemsep]
+    \item $\gamma = 0$: Standard Cross-Entropy (no focusing)
+    \item $\gamma = 1$: Mild focus on hard examples
+    \item $\gamma = 2$: Strong focus --- our choice for moderate imbalance (72/28)
+    \item $\gamma = 5$: Very aggressive --- for extreme imbalance ($>$95/5)
+\end{itemize}
+
+$\gamma = 2.0$ is the most common default in literature (Lin et al., ICCV 2017, original Focal Loss paper). For our 72/28 imbalance, it provides strong focus without being too aggressive. A hyperparameter sweep over $\gamma$ is listed as a future improvement.
+
+\subsection{Q: Doesn't TTA make inference 5$\times$ slower?}
+
+Yes, but:
+\begin{enumerate}[noitemsep]
+    \item \textbf{For our use case (disaster monitoring), accuracy $>$ speed.} A missed landslide costs lives. An extra 3 seconds of inference is acceptable.
+    \item \textbf{5 views can run in parallel on GPU.} Batch all 5 views together --- actual wall-clock time increase is $\sim$2$\times$, not 5$\times$.
+    \item \textbf{Adaptive TTA is possible:} Only apply multi-view inference when single-pass confidence is borderline (40--55\%). High-confidence images skip TTA entirely.
+\end{enumerate}
+
+\subsection{Q: Your r6 metrics are projected, not actual. Why?}
+
+The Focal Loss + TTA improvements require \textbf{full retraining} of both EfficientNet-B3 and ViT-B/16 with the new loss function, followed by a complete TTA evaluation run. The projected ranges (86--88\% accuracy) are based on:
+
+\begin{itemize}[noitemsep]
+    \item Published literature: Focal Loss typically improves F1 by 2--4\% on imbalanced datasets
+    \item Published literature: TTA typically improves accuracy by 1--3\% on image classification
+\end{itemize}
+
+\textbf{If asked ``why didn't you retrain?'':} ``The retraining is planned as the first step of the validation phase. The projected ranges give us a target to validate against.'' (This is a fair answer for an M.Tech thesis where the methodology is the main contribution.)
+
+\subsection{Q: Why did multi-class classification fail (71.67\% vs 84.55\%)?}
+
+Three reasons:
+\begin{enumerate}[noitemsep]
+    \item \textbf{Too few per-class samples:} Some classes (translational\_slide, rotational\_slide) have very few training images. The model can't learn rare classes well.
+    \item \textbf{Visual similarity:} Mudflows and debris flows look almost identical from satellite altitude. Even human experts struggle to distinguish them.
+    \item \textbf{6-class is harder than 2-class:} Binary classification only needs one decision boundary. 6-class needs 5 boundaries, each requiring more data.
+\end{enumerate}
+
+\textbf{Solution (if asked):} Hierarchical classification --- first detect landslide (binary, high accuracy), then classify type only on the positives using a specialized multi-class model with more per-class training data.
+
+\subsection{Q: What is Grad-CAM? Can it improve accuracy?}
+
+Grad-CAM is an \textbf{interpretability tool}, not an accuracy improvement. It generates a heatmap showing which image regions the model focused on when making its prediction.
+
+\textbf{How it works:}
+\begin{enumerate}[noitemsep]
+    \item Forward pass: get prediction
+    \item Backward pass: compute gradients of the predicted class w.r.t. the last convolutional layer
+    \item Use gradients as importance weights for each feature channel
+    \item Weighted sum of feature maps $\to$ heatmap
+    \item ReLU (only positive influence) $\to$ normalize $\to$ overlay on original image
+\end{enumerate}
+
+\textbf{Value:} It doesn't change the number, but it tells you \textit{why}. If the heatmap highlights exposed soil and debris (correct features), the prediction is trustworthy. If it highlights clouds or roads (wrong features), the prediction is suspicious. This is critical for disaster response teams who must decide whether to issue an evacuation order.
+
+% ============================================================================
+\section{General Project Questions}
+% ============================================================================
+
+\subsection{Q: What is the main contribution of your project?}
+
+\begin{enumerate}[noitemsep]
+    \item A \textbf{dual-phase pipeline} combining CNN image classification with HMM temporal forecasting --- detecting landslides AND predicting future risk.
+    \item A \textbf{CNN-Transformer hybrid ensemble} (EfficientNet-B3 + ViT-B/16) that outperforms any single model by combining local and global feature extraction.
+    \item \textbf{Systematic iterative improvement} through 7 experiments across 3 lifecycles, with each step motivated by identified weaknesses.
+    \item \textbf{Explainable predictions} via Grad-CAM for safety-critical deployment.
+\end{enumerate}
+
+\subsection{Q: How is your work different from existing landslide detection papers?}
+
+\begin{itemize}[noitemsep]
+    \item Most papers use a \textbf{single model} (ResNet, U-Net). We use an \textbf{ensemble} of architecturally diverse models (CNN + Transformer).
+    \item Most papers only \textbf{detect} landslides. We also \textbf{forecast} future risk using an HMM trained on 28 years of historical data.
+    \item Most papers don't address \textbf{confidence calibration}. We use temperature scaling to make predictions operationally reliable.
+    \item We provide \textbf{visual explainability} (Grad-CAM), which is rarely included in remote sensing landslide papers.
+\end{itemize}
+
+\subsection{Q: What would you do differently if starting over?}
+
+\begin{enumerate}[noitemsep]
+    \item Start with a \textbf{4-channel input} (R, G, B, NIR) instead of converting to RGB --- the NIR band contains vegetation stress information critical for landslide detection.
+    \item Use a \textbf{larger dataset} from the start (Landslide4Sense, 2.9GB) instead of HR-GLDD's 2,190 images.
+    \item Implement \textbf{Focal Loss from the beginning} rather than discovering the class imbalance issue later.
+    \item Use \textbf{Optuna for automated hyperparameter search} instead of manual tuning.
+\end{enumerate}
+
+\subsection{Q: Can this system be deployed in real-world disaster monitoring?}
+
+Not yet as-is, but it's close. What's needed:
+\begin{enumerate}[noitemsep]
+    \item \textbf{Validate projected r6 metrics} with actual retraining
+    \item \textbf{Test on diverse geographies} beyond the HR-GLDD benchmark
+    \item \textbf{Real-time pipeline:} ONNX/TensorRT compilation for fast inference
+    \item \textbf{Pixel-level output:} Current pipeline says ``yes/no landslide'' but doesn't draw the boundary. U-Net segmentation would add this.
+    \item \textbf{Integration with satellite feeds:} Connect to Sentinel-2 or similar for continuous monitoring
+\end{enumerate}
+
+\end{document}

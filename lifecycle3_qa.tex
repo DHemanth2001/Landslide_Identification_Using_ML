@@ -1,0 +1,266 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{xcolor}
+
+\title{Lifecycle 3 --- Q\&A Preparation \\ \large Questions Your Guide Will Ask}
+\author{Study Reference}
+\date{2026-03-18}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Focal Loss Questions}
+% ============================================================================
+
+\subsection{Q: What is Focal Loss? How is it different from Cross-Entropy?}
+
+\textbf{Cross-Entropy:} Treats all samples equally. Easy examples (model is 99\% sure and correct) get the same importance as hard examples (model is 55\% sure).
+
+\textbf{Focal Loss:} Adds a modulating factor that down-weights easy examples:
+\[
+\text{FL}(p_t) = -(1 - p_t)^\gamma \cdot \log(p_t)
+\]
+
+\textbf{Numerical example:}
+\begin{itemize}[noitemsep]
+    \item Easy example ($p_t = 0.9$): CE = 0.105, FL = 0.00105 $\to$ \textbf{100$\times$ less loss}
+    \item Hard example ($p_t = 0.3$): CE = 1.204, FL = 0.590 $\to$ retains significant loss
+\end{itemize}
+
+The network ignores easy examples and concentrates learning on hard borderline cases.
+
+\subsection{Q: Why Focal Loss instead of just oversampling?}
+
+Both address class imbalance but differently:
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{lp{5cm}p{5cm}}
+        \toprule
+        & \textbf{Oversampling} & \textbf{Focal Loss} \\
+        \midrule
+        How & Duplicates minority class images & Changes the loss function \\
+        Risk & Overfitting on duplicates & None (no data change) \\
+        Focus & Class membership & Sample difficulty \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Focal Loss is smarter because a non-landslide image can also be ``hard'' (e.g., ploughed field that looks like a landslide). Focal Loss focuses on difficulty, not just class.
+
+\textbf{We use both:} WeightedRandomSampler (data-level) + Focal Loss (loss-level).
+
+\subsection{Q: Why $\gamma = 2.0$? Why not higher or lower?}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{lcl}
+        \toprule
+        $\gamma$ & \textbf{Behavior} & \textbf{When to use} \\
+        \midrule
+        0 & Standard Cross-Entropy & Balanced datasets \\
+        1 & Mild focus on hard examples & Slight imbalance \\
+        \textbf{2} & \textbf{Strong focus} & \textbf{Our case: 72/28 imbalance} \\
+        5 & Very aggressive & Extreme imbalance ($>$95/5) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+$\gamma = 2.0$ is the default from the original paper (Lin et al., ICCV 2017). For our moderate 72/28 imbalance, it provides strong focus without being too aggressive. A sweep over $\gamma$ values is a listed future improvement.
+
+\subsection{Q: What is the $\alpha$ parameter in Focal Loss?}
+
+$\alpha$ is an optional per-class weighting factor. The full formula is:
+\[
+\text{FL}(p_t) = -\alpha_t (1 - p_t)^\gamma \cdot \log(p_t)
+\]
+
+We did NOT use $\alpha$ because we already handle class imbalance at the data level with WeightedRandomSampler. Using both $\alpha$ and the sampler could over-correct. Testing $\alpha$ is a future improvement.
+
+% ============================================================================
+\section{Test-Time Augmentation Questions}
+% ============================================================================
+
+\subsection{Q: What is TTA? Why 5 views?}
+
+TTA = Test-Time Augmentation. Instead of one forward pass, we create 5 different views of the same image and average predictions:
+
+\begin{enumerate}[noitemsep]
+    \item Original (no change)
+    \item Horizontal flip (mirror left-right)
+    \item Vertical flip (mirror top-bottom)
+    \item Both flips combined
+    \item 90\textdegree\ rotation
+\end{enumerate}
+
+\textbf{Why 5:} These geometric transforms are guaranteed to preserve landslide features (a landslide flipped is still a landslide). We avoid color/brightness augmentations at test time because they could distort satellite imagery characteristics.
+
+\subsection{Q: Doesn't TTA make inference 5$\times$ slower?}
+
+Yes, but:
+\begin{enumerate}[noitemsep]
+    \item \textbf{Accuracy $>$ speed} for disaster monitoring. Extra 3 seconds is acceptable.
+    \item \textbf{GPU parallelism:} Batch all 5 views $\to$ actual slowdown is $\sim$2$\times$, not 5$\times$
+    \item \textbf{Adaptive TTA (future):} Only use multi-view when single-pass confidence is borderline (40--55\%). High-confidence images skip TTA.
+\end{enumerate}
+
+\subsection{Q: How does TTA help mathematically?}
+
+Averaging reduces variance. If single-pass has noise $\sigma$, averaging $n$ views has noise $\sigma / \sqrt{n}$. With 5 views, noise is reduced by $\sqrt{5} \approx 2.24\times$.
+
+\textbf{Practical effect:} A borderline case with $P = 0.48$ (miss at threshold 0.467) might become $P_{\text{TTA}} = 0.51$ (correct detection) because the other views provide cleaner signals.
+
+% ============================================================================
+\section{Grad-CAM Questions}
+% ============================================================================
+
+\subsection{Q: What is Grad-CAM? Can it improve accuracy?}
+
+Grad-CAM is an \textbf{interpretability tool}, NOT an accuracy improvement. It generates a heatmap showing which image regions the model focused on.
+
+\textbf{How it works:}
+\begin{enumerate}[noitemsep]
+    \item Forward pass: get prediction
+    \item Backward pass: compute gradients of predicted class w.r.t.\ last convolutional layer
+    \item Gradients become importance weights for each feature channel
+    \item Weighted sum of feature maps $\to$ heatmap
+    \item ReLU (only positive influence) $\to$ normalize $\to$ overlay on image
+\end{enumerate}
+
+\textbf{Formula:}
+\[
+L_{\text{Grad-CAM}}^{c} = \text{ReLU}\!\left(\sum_k \alpha_k^c \cdot A^k\right), \quad \alpha_k^c = \frac{1}{Z} \sum_i \sum_j \frac{\partial y^c}{\partial A^k_{ij}}
+\]
+
+\subsection{Q: Why is Grad-CAM important for this project?}
+
+Because this is a \textbf{safety-critical} system:
+\begin{itemize}[noitemsep]
+    \item Disaster teams won't issue evacuation orders based on a black-box number
+    \item Grad-CAM lets them visually verify: ``Is the model looking at actual debris, or at a cloud shadow?''
+    \item If hot regions match geological features $\to$ trust the prediction
+    \item If hot regions are on irrelevant areas $\to$ flag as unreliable
+    \item Explainability is increasingly required by regulators for AI in safety-critical applications
+\end{itemize}
+
+\subsection{Q: Why is Grad-CAM resolution so low (10$\times$10)?}
+
+The heatmap resolution matches the spatial size of the target convolutional layer:
+\begin{itemize}[noitemsep]
+    \item EfficientNet-B3 final feature map: 10$\times$10 $\to$ coarse heatmap
+    \item ViT-B/16: 14$\times$14 patches $\to$ slightly better
+    \item The heatmap is upsampled (interpolated) to full image size for overlay
+\end{itemize}
+
+\textbf{Improvement:} Grad-CAM++ or Score-CAM produce finer heatmaps. For ViT, attention rollout across all layers gives richer spatial maps. These are listed as future improvements.
+
+% ============================================================================
+\section{Results Questions}
+% ============================================================================
+
+\subsection{Q: Your r6 metrics are projected, not actual. Why?}
+
+Focal Loss + TTA require full retraining of both models and complete evaluation. The projections are based on:
+\begin{itemize}[noitemsep]
+    \item Published literature: Focal Loss $\to$ +2--4\% F1 on imbalanced datasets
+    \item Published literature: TTA $\to$ +1--3\% accuracy on image classification
+\end{itemize}
+
+\textbf{How to answer this confidently:} ``The retraining is the immediate next step. The projected ranges give us a validation target. The methodology --- which is the main thesis contribution --- is fully implemented and ready to run.''
+
+\subsection{Q: Why did multi-class drop to 71.67\%?}
+
+Three reasons:
+\begin{enumerate}[noitemsep]
+    \item \textbf{Too few per-class samples:} Some classes have very few training images
+    \item \textbf{Visual similarity:} Mudflows and debris flows look nearly identical from satellite altitude
+    \item \textbf{6-class is harder:} Binary needs 1 boundary, 6-class needs 5 boundaries
+\end{enumerate}
+
+\textbf{Solution:} Hierarchical classification --- binary detection first (high accuracy), then type classification only on positives.
+
+\subsection{Q: What is the overall improvement from r0 to r6?}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Metric} & \textbf{r0 (start)} & \textbf{r6 (projected)} & \textbf{Total gain} \\
+        \midrule
+        Accuracy & 78.54\% & 86--88\% & +7.5--9.5\% \\
+        F1-Score & 67.67\% & 78--81\% & +10.3--13.3\% \\
+        ROC-AUC & 85.53\% & 92--94\% & +6.5--8.5\% \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+% ============================================================================
+\section{General Project Questions}
+% ============================================================================
+
+\subsection{Q: What is the main contribution of your project?}
+
+\begin{enumerate}[noitemsep]
+    \item \textbf{Dual-phase pipeline:} CNN detection + HMM forecasting (not just detection)
+    \item \textbf{CNN-Transformer hybrid ensemble:} local + global features
+    \item \textbf{Systematic iteration:} 7 experiments, 3 lifecycles, each motivated by identified gaps
+    \item \textbf{Explainability:} Grad-CAM for safety-critical trust
+\end{enumerate}
+
+\subsection{Q: How is your work different from existing papers?}
+
+\begin{itemize}[noitemsep]
+    \item Most papers use single model --- we use architecturally diverse ensemble
+    \item Most papers only detect --- we also forecast future risk (HMM)
+    \item Most papers don't calibrate confidence --- we use temperature scaling
+    \item Most papers don't explain predictions --- we use Grad-CAM
+\end{itemize}
+
+\subsection{Q: What would you do differently if starting over?}
+
+\begin{enumerate}[noitemsep]
+    \item Use 4-channel input (R, G, B, NIR) for NDVI from the start
+    \item Use larger dataset (Landslide4Sense)
+    \item Implement Focal Loss from the beginning
+    \item Automated hyperparameter search (Optuna)
+\end{enumerate}
+
+\subsection{Q: Can this be deployed in real-world monitoring?}
+
+Close but needs:
+\begin{enumerate}[noitemsep]
+    \item Validate r6 with actual retraining
+    \item Test on diverse geographies beyond HR-GLDD
+    \item Real-time inference (ONNX/TensorRT)
+    \item Pixel-level segmentation (U-Net) for precise boundaries
+    \item Integration with satellite feeds (Sentinel-2)
+\end{enumerate}
+
+\subsection{Q: What is the novelty of using HMM with CNN?}
+
+Most landslide detection papers are purely spatial --- they classify one image at a time with no temporal context. Our HMM adds:
+\begin{itemize}[noitemsep]
+    \item \textbf{Type prediction:} What kind of landslide (shallow, deep, debris, rockfall)
+    \item \textbf{Occurrence probability:} How likely is this event based on regional history
+    \item \textbf{Peak risk month:} When is this region most vulnerable (e.g., July monsoon)
+    \item \textbf{Future forecast:} Probability of recurrence in next 1--3 time steps
+\end{itemize}
+
+This temporal layer transforms a static ``yes/no'' detector into an actionable risk assessment system.
+
+\end{document}

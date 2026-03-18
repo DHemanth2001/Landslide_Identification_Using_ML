@@ -22,7 +22,7 @@
 
 \section*{Input Information}
 \begin{itemize}
-    \item \textbf{Image ID:} \texttt{test\_image\_409.jpg}
+    \item \textbf{Image ID:} \texttt{ls\_test\_0011.jpg}
     \item \textbf{Resolution:} $1024 \times 1024$
     \item \textbf{Location Context:} Shimla, Himachal Pradesh, India
 \end{itemize}
@@ -51,9 +51,12 @@ To verify the prediction is based on geological structures and not background no
 
 \begin{figure}[H]
     \centering
-    % Placeholder for actual images
-    \fbox{\rule{0pt}{4cm} \rule{4cm}{0pt} \textit{Original Image}} \hspace{1cm}
-    \fbox{\rule{0pt}{4cm} \rule{4cm}{0pt} \textit{Grad-CAM Heatmap}}
+    % Original test image from the dataset
+    \includegraphics[width=0.4\textwidth]{project/data/processed/test/debris_flow/ls_test_0011.jpg}
+    \hspace{1cm}
+    % Grad-CAM heatmap — generate using: python -c "from utils.gradcam import generate_gradcam_for_image; ..."
+    % and save to project/plots/gradcam_ls_test_0011.png
+    \includegraphics[width=0.4\textwidth]{project/plots/gradcam_ls_test_0011.png}
     \caption{Left: Original optical satellite imagery. Right: Grad-CAM heatmap overlay. The model focus (red regions) aligns with the exposed soil and scarp typical of a recent landslide.}
 \end{figure}
 

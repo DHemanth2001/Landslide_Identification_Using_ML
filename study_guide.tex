@@ -1,0 +1,646 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{xcolor}
+
+\title{Complete Study Guide \\ \large Everything You Need to Know About This Project \\ \normalsize Read This One File Before Your Presentation}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\noindent \textit{This guide explains your entire project in simple English. If you read and understand this file, you will be able to explain everything from start to finish to your guide. No prior AI/ML knowledge is needed.}
+
+\tableofcontents
+\newpage
+
+% ============================================================================
+\part{Understanding AI/ML Basics}
+% ============================================================================
+
+\section{What is Machine Learning?}
+
+Machine learning is teaching a computer to make decisions by showing it examples, instead of writing rules manually.
+
+\textbf{Simple example:} Imagine you want a computer to recognize cats in photos.
+\begin{itemize}[noitemsep]
+    \item \textbf{Traditional programming:} You write rules --- ``if it has pointy ears and whiskers, it is a cat.'' This is impossible to write for all cases.
+    \item \textbf{Machine learning:} You show the computer 10,000 photos labeled ``cat'' or ``not cat.'' The computer figures out the patterns on its own.
+\end{itemize}
+
+The computer does not actually ``learn'' like a human. It adjusts numbers (called \textbf{weights}) until its predictions match the correct answers. The process of adjusting these weights is called \textbf{training}.
+
+\section{What is a Neural Network?}
+
+A neural network is a structure that takes an input (like an image), passes it through layers of math operations, and produces an output (like ``landslide'' or ``not landslide'').
+
+Think of it as a chain of filters:
+\begin{enumerate}[noitemsep]
+    \item \textbf{Input:} The raw image (pixels)
+    \item \textbf{Hidden layers:} Each layer looks for different patterns --- edges, textures, shapes
+    \item \textbf{Output:} A prediction with confidence (``85\% landslide'')
+\end{enumerate}
+
+\textbf{Key point:} The network starts with random weights and gets better as it sees more training examples. After training, the weights are saved as a \textbf{checkpoint file} so you don't have to retrain every time.
+
+\section{What is a CNN (Convolutional Neural Network)?}
+
+A CNN is a special type of neural network made for images. It uses small filters (like 3$\times$3 pixel squares) that slide across the image to detect patterns.
+
+\begin{itemize}[noitemsep]
+    \item \textbf{First layers} detect simple things: edges, lines, color changes
+    \item \textbf{Middle layers} detect medium things: textures, shapes
+    \item \textbf{Deep layers} detect complex things: landslide scars, debris patterns
+\end{itemize}
+
+\textbf{Why CNNs work for images:} Nearby pixels are related (a pixel next to a tree pixel is probably also a tree). CNNs use this fact to be efficient.
+
+\section{Key Terms You Must Know}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{p{3.5cm}p{10cm}}
+        \toprule
+        \textbf{Term} & \textbf{Simple Meaning} \\
+        \midrule
+        \textbf{Dataset} & The collection of images and labels used for training and testing \\
+        \textbf{Training} & Showing examples to the model so it learns patterns \\
+        \textbf{Validation} & Testing during training to check if the model is improving \\
+        \textbf{Test set} & Images the model has never seen --- used for final evaluation \\
+        \textbf{Epoch} & One complete pass through all training images \\
+        \textbf{Batch size} & How many images the model sees at once (we use 32) \\
+        \textbf{Loss} & A number that measures how wrong the prediction is. Lower is better. \\
+        \textbf{Optimizer} & The algorithm that adjusts weights to reduce loss (we use Adam) \\
+        \textbf{Learning rate} & How big each weight adjustment is. Too big = unstable, too small = slow \\
+        \textbf{Overfitting} & Model memorizes training data but fails on new data \\
+        \textbf{Transfer learning} & Starting from a model already trained on millions of images, then teaching it our specific task \\
+        \textbf{Checkpoint} & A saved file containing the trained model's weights \\
+        \textbf{Softmax} & Converts raw numbers into probabilities that add up to 100\% \\
+        \textbf{Logits} & The raw numbers before softmax --- not yet probabilities \\
+        \textbf{Inference} & Using a trained model to make predictions on new images \\
+        \textbf{GPU} & Graphics card --- makes training 10--20$\times$ faster than CPU \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Understanding the Metrics}
+
+These are the numbers you report to show how good your model is.
+
+\subsection{Accuracy}
+
+\textbf{What it means:} Out of all images, how many did we get right?
+
+\textbf{Example:} 100 images, 80 correct $\to$ 80\% accuracy.
+
+\textbf{Problem:} If 72 images are ``not landslide'' and 28 are ``landslide,'' a model that always says ``not landslide'' gets 72\% accuracy but catches zero landslides. So accuracy alone is not enough.
+
+\subsection{Precision}
+
+\textbf{What it means:} Out of all images we \textit{flagged as landslide}, how many actually were?
+
+\textbf{Example:} We flagged 50 images as landslide. 40 were correct, 10 were wrong. Precision = 40/50 = 80\%.
+
+\textbf{Low precision = too many false alarms.}
+
+\subsection{Recall}
+
+\textbf{What it means:} Out of all \textit{actual landslide} images, how many did we catch?
+
+\textbf{Example:} There are 28 real landslide images. We caught 20, missed 8. Recall = 20/28 = 71\%.
+
+\textbf{Low recall = missed landslides = dangerous.} In disaster monitoring, recall matters most because a missed landslide can cost lives.
+
+\subsection{F1-Score}
+
+\textbf{What it means:} A single number that balances precision and recall.
+
+\textbf{Formula:} F1 = 2 $\times$ (Precision $\times$ Recall) / (Precision + Recall)
+
+\textbf{Why use it:} If precision is high but recall is low (or vice versa), F1 will be low. Both must be good for F1 to be high. This is the most important metric for our project.
+
+\subsection{ROC-AUC}
+
+\textbf{What it means:} How well the model ranks landslide images above non-landslide images, across all possible thresholds.
+
+\textbf{Simple explanation:} Pick one random landslide image and one random non-landslide image. AUC = the probability that the model gives a higher score to the landslide image. AUC of 85\% means it ranks correctly 85\% of the time.
+
+\textbf{Range:} 50\% = random guessing, 100\% = perfect. Above 85\% is good.
+
+\subsection{Confusion Matrix}
+
+A 2$\times$2 table showing:
+\begin{itemize}[noitemsep]
+    \item \textbf{True Positive (TP):} Model said landslide, and it was landslide (correct)
+    \item \textbf{True Negative (TN):} Model said no landslide, and it was no landslide (correct)
+    \item \textbf{False Positive (FP):} Model said landslide, but it was not (false alarm)
+    \item \textbf{False Negative (FN):} Model said no landslide, but it was landslide (missed --- dangerous)
+\end{itemize}
+
+% ============================================================================
+\part{Understanding Your Project}
+% ============================================================================
+
+\section{The Problem}
+
+Landslides kill thousands of people every year. Countries like India, Nepal, and Philippines are hit hardest because of mountains and heavy rain.
+
+Currently, landslide detection depends on:
+\begin{itemize}[noitemsep]
+    \item \textbf{Field surveys:} People go to the site and inspect. Slow, expensive, cannot cover large areas.
+    \item \textbf{Expert analysis:} Scientists look at satellite images manually. Time-consuming and not scalable.
+\end{itemize}
+
+Satellite images are freely available (from NASA, ESA). The bottleneck is not data --- it is the analysis.
+
+\section{Your Solution --- Two-Phase Pipeline}
+
+Your project is an automated system with two phases:
+
+\subsection{Phase 1 --- Image Classification (Is this a landslide?)}
+
+\begin{enumerate}[noitemsep]
+    \item Take a satellite image as input
+    \item Pass it through a trained CNN (deep learning model)
+    \item Output: ``Landslide'' or ``Not Landslide'' with a confidence percentage
+\end{enumerate}
+
+\textbf{Models used:} Started with AlexNet, upgraded to EfficientNet-B3, then added ViT-B/16 as an ensemble.
+
+\subsection{Phase 2 --- Risk Forecasting (What type? How likely? When?)}
+
+If Phase 1 says ``landslide,'' Phase 2 kicks in:
+
+\begin{enumerate}[noitemsep]
+    \item Takes the country name as input
+    \item Looks up historical patterns from NASA's database (9,471 real events, 141 countries)
+    \item Uses a Hidden Markov Model (HMM) to predict:
+    \begin{itemize}[noitemsep]
+        \item What type of landslide (debris flow, mudslide, rockfall, etc.)
+        \item How likely it is to happen (probability percentage)
+        \item Which month has the highest risk (e.g., July for monsoon regions)
+        \item What might happen next (3-step forecast)
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Why two phases?}
+
+\begin{itemize}[noitemsep]
+    \item Phase 1 answers: \textit{``Is there a landslide in this image?''}
+    \item Phase 2 answers: \textit{``What kind, how dangerous, and when will it happen again?''}
+    \item No existing system does both. This is your main contribution.
+\end{itemize}
+
+\section{The Datasets}
+
+\subsection{Phase 1 --- HR-GLDD (Images)}
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Source:} Zenodo (scientific data repository by CERN)
+    \item \textbf{What it contains:} Satellite image patches of 128$\times$128 pixels with 4 channels (Red, Green, Blue, Near-Infrared)
+    \item \textbf{What you did:} Converted numpy arrays to JPEG images. If more than 5\% of pixels are labeled landslide, the whole image is labeled ``landslide''
+    \item \textbf{Size:} 2,190 training + 550 validation + 699 test images
+    \item \textbf{Class imbalance:} 72\% non-landslide, 28\% landslide (more ``no landslide'' images than ``landslide'' images)
+\end{itemize}
+
+\subsection{Phase 2 --- NASA Global Landslide Catalog (Events)}
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Source:} NASA Open Data Portal
+    \item \textbf{What it contains:} Records of real landslide events from 1970 to 2019
+    \item \textbf{Each record has:} Date, country, landslide type, trigger (rain/earthquake/etc.), size, deaths
+    \item \textbf{Size:} 9,471 usable records after cleaning, 141 countries
+    \item \textbf{Why this dataset:} Publicly available, peer-reviewed, curated by NASA scientists, covers 28 years globally
+\end{itemize}
+
+\section{What is Transfer Learning? (Very Important)}
+
+Training a CNN from scratch requires millions of images. We only have 2,190. So we use \textbf{transfer learning}:
+
+\begin{enumerate}[noitemsep]
+    \item Start with a model already trained on ImageNet (1.2 million images, 1000 categories like cats, dogs, cars)
+    \item This model already knows how to detect edges, textures, and shapes
+    \item \textbf{Freeze} the existing layers (don't change them)
+    \item \textbf{Replace} the final layer to output our classes instead of ImageNet's 1000 classes
+    \item \textbf{Train only the new layer} on our 2,190 images
+    \item Later, \textbf{unfreeze} all layers and fine-tune the entire model with a very small learning rate
+\end{enumerate}
+
+\textbf{Analogy:} Hiring an experienced photographer (ImageNet training) and teaching them to spot landslides specifically (fine-tuning). Much faster than training someone from scratch.
+
+\section{What is an HMM? (Hidden Markov Model)}
+
+An HMM models sequences where the true state is hidden (you cannot directly observe it).
+
+\textbf{Analogy:} Imagine you are inside a room with no windows. You can hear sounds outside --- birds, rain, thunder. From these sounds (observations), you try to guess the weather (hidden state).
+
+In our project:
+\begin{itemize}[noitemsep]
+    \item \textbf{Hidden states:} The underlying landslide regime (shallow slide region, deep slide region, debris flow region, etc.) --- we cannot observe this directly
+    \item \textbf{Observations:} The type of landslide that was recorded (mudslide, rockfall, etc.)
+    \item \textbf{Transition matrix:} Probability of moving from one state to another (e.g., after a shallow slide, there is a 30\% chance the next event is a debris flow)
+    \item \textbf{Emission matrix:} Probability of observing a particular landslide type given the hidden state
+\end{itemize}
+
+\textbf{Training:} The Baum-Welch algorithm adjusts the transition and emission matrices to best explain the observed sequences. Think of it as: the model looks at all historical events and figures out the hidden patterns.
+
+\textbf{Prediction:} The Viterbi algorithm finds the most likely sequence of hidden states. From the current state, we look at the transition matrix to forecast what happens next.
+
+% ============================================================================
+\part{The 7 Experiments (r0 to r6)}
+% ============================================================================
+
+\section{How to Think About the 7 Results}
+
+You ran 7 experiments, each one fixing a problem found in the previous one. Think of it as building a house:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{r0:} Lay the foundation (basic model, see if it works at all)
+    \item \textbf{r1:} Strengthen the foundation (use better starting weights)
+    \item \textbf{r2:} Upgrade the building material (better architecture)
+    \item \textbf{r3:} Fix the measuring tools (calibrate confidence)
+    \item \textbf{r4:} Add a second opinion (ensemble of two models)
+    \item \textbf{r5:} Replace the weaker opinion with a stronger one (ViT replaces AlexNet)
+    \item \textbf{r6:} Fine-tune everything (better loss function + multiple test views + explainability)
+\end{itemize}
+
+\section{r0 --- AlexNet from Scratch (Baseline)}
+
+\textbf{What:} Trained AlexNet (a simple CNN with 5 layers) from random weights on our images.
+
+\textbf{Why:} Every research project needs a baseline --- a starting point to measure all improvements against.
+
+\textbf{Results:} Accuracy 78.54\%, F1 67.67\%, AUC 85.53\%
+
+\textbf{Problem found:} The model makes too many mistakes. Training from scratch with only 2,190 images is not enough for AlexNet's 62 million parameters.
+
+\section{r1 --- AlexNet with Transfer Learning}
+
+\textbf{What:} Same AlexNet, but started with ImageNet pre-trained weights instead of random.
+
+\textbf{Why:} r0 showed that training from scratch doesn't work well with small data. Transfer learning gives the model a head start.
+
+\textbf{Results:} Accuracy 80.11\%, F1 66.98\%, AUC 85.73\%
+
+\textbf{Problem found:} Slight improvement in accuracy but F1 barely changed. AlexNet's architecture is too old and simple --- it cannot learn the complex patterns needed for landslide detection.
+
+\section{r2 --- EfficientNet-B3 (Modern Architecture)}
+
+\textbf{What:} Replaced AlexNet with EfficientNet-B3, a modern CNN that is both smaller (12M vs 62M parameters) and smarter (compound scaling).
+
+\textbf{Why:} r1 showed AlexNet has reached its limit. EfficientNet-B3 uses a technique called ``compound scaling'' that balances depth (more layers), width (more filters), and resolution (larger input images) together.
+
+\textbf{Results:} Accuracy 79.97\%, Recall 78.20\% (up from 67.30\%!), F1 70.21\%, AUC 88.93\%
+
+\textbf{Key insight:} Accuracy looks similar to r1, but \textbf{recall jumped by 11\%}. This means we catch 11\% more landslides. In disaster monitoring, catching more landslides is more important than overall accuracy.
+
+\textbf{Problem found:} The model is overconfident --- when it says ``95\% sure,'' it is actually only 75\% correct. The confidence numbers cannot be trusted.
+
+\section{r3 --- Temperature Calibration}
+
+\textbf{What:} Added temperature scaling to fix overconfident predictions.
+
+\textbf{Why:} r2 showed that the model's confidence scores don't match reality. If a disaster team sees ``95\% landslide,'' they will act urgently. But if the model is often wrong at 95\%, that trust is broken.
+
+\textbf{How temperature works:} Divide the raw output numbers (logits) by a temperature value T before converting to probabilities.
+\begin{itemize}[noitemsep]
+    \item T $>$ 1: Makes probabilities softer (less extreme) --- our case, T = 1.1511
+    \item T $<$ 1: Makes probabilities sharper (more extreme)
+    \item T = 1: No change
+\end{itemize}
+
+\textbf{Results:} Same accuracy, F1, and AUC as r2 (temperature doesn't change predictions, only confidence scores). But now when the model says 80\%, it is actually correct about 80\% of the time.
+
+\textbf{Problem found:} Using only one model means if that model has a blind spot, there is no safety net.
+
+\section{r4 --- Ensemble (EfficientNet-B3 + AlexNet)}
+
+\textbf{What:} Combined two models --- EfficientNet-B3 (60\% weight) + AlexNet pretrained (40\% weight). The final prediction is a weighted average of both.
+
+\textbf{Why:} Two models make different mistakes. When one is confused, the other might be correct. Averaging their predictions cancels out random errors.
+
+\textbf{Why 60/40:} EfficientNet-B3 is the stronger model, so it gets more weight. AlexNet's 40\% can still override when EfficientNet is wrong.
+
+\textbf{Threshold change:} Also changed the decision threshold from 0.5 to 0.467. This means: if the model says there is more than 46.7\% chance of landslide, we call it a landslide. Lower threshold = catch more landslides (even at cost of some false alarms).
+
+\textbf{Results:} Accuracy 82.40\%, F1 72.97\%, AUC 89.83\%
+
+\textbf{Problem found:} AlexNet and EfficientNet-B3 are both CNNs. They ``see'' images the same way (local patterns). When one fails on something that needs global understanding (like seeing that a debris trail at the bottom connects to a scar at the top), the other likely fails too.
+
+\section{r5 --- Ensemble with ViT (EfficientNet-B3 + ViT-B/16)}
+
+\textbf{What:} Replaced AlexNet in the ensemble with Vision Transformer (ViT-B/16).
+
+\textbf{Why:} r4 showed that two CNNs share the same blind spots. ViT is a completely different architecture --- it uses ``attention'' instead of convolution. This means it sees the whole image at once, not just local patches.
+
+\textbf{How ViT works (simple):}
+\begin{enumerate}[noitemsep]
+    \item Cut the image into 16$\times$16 pixel patches (like puzzle pieces)
+    \item Each patch becomes a vector (list of numbers)
+    \item Every patch ``looks at'' every other patch to understand relationships
+    \item This is called ``self-attention'' --- it learns which parts of the image are related
+\end{enumerate}
+
+\textbf{Why this is powerful:} A CNN might see a debris trail and a scar separately. ViT sees them together and understands they are part of the same landslide.
+
+\textbf{Results:} Accuracy 84.55\%, F1 75.98\%, AUC 91.50\%
+
+\textbf{This was the biggest single improvement in the entire project} (+3\% F1 from r4 to r5). It proves that \textit{diversity of architecture} (CNN + Transformer) is more important than just combining two similar models.
+
+\textbf{Problem found:}
+\begin{itemize}[noitemsep]
+    \item 40 landslide images are still being missed (false negatives)
+    \item Some borderline images get 44--46\% confidence (just below the 46.7\% threshold) --- if the image was rotated, the confidence might flip
+    \item No way to verify WHY the model made a prediction --- it is a black box
+\end{itemize}
+
+\section{r6 --- Focal Loss + TTA + Grad-CAM}
+
+\textbf{What:} Three improvements targeting the three r5 problems.
+
+\subsection{Focal Loss (fixes class imbalance)}
+
+\textbf{Problem:} Normal loss function treats all images equally. Easy images (model is 99\% sure and correct) get the same importance as hard images (model is 55\% sure).
+
+\textbf{Solution:} Focal Loss adds a penalty factor that \textbf{down-weights easy examples}. The model stops wasting effort on images it already gets right and focuses on the hard, borderline cases.
+
+\textbf{Formula:} FL = $-(1-p)^\gamma \cdot \log(p)$, where $\gamma = 2.0$
+
+\textbf{Practical effect:} An easy image (p=0.9) gets 100$\times$ less loss than with normal cross-entropy. A hard image (p=0.3) keeps most of its loss.
+
+\subsection{Test-Time Augmentation / TTA (fixes single-pass fragility)}
+
+\textbf{Problem:} The same image, just rotated, might get a different confidence score.
+
+\textbf{Solution:} Instead of one prediction, create 5 views of the same image and average the predictions:
+\begin{enumerate}[noitemsep]
+    \item Original image (no change)
+    \item Flipped left-right
+    \item Flipped top-bottom
+    \item Both flips
+    \item Rotated 90 degrees
+\end{enumerate}
+
+\textbf{Why it helps:} Averaging 5 predictions reduces randomness. A borderline case at 44\% might become 51\% after TTA because the other views give cleaner signals.
+
+\subsection{Grad-CAM (fixes black box problem)}
+
+\textbf{Problem:} The model says ``landslide'' but we don't know what it is looking at. Maybe it is looking at a cloud shadow, not actual debris.
+
+\textbf{Solution:} Grad-CAM generates a heatmap showing which parts of the image the model focused on.
+
+\textbf{How it works (simple):}
+\begin{enumerate}[noitemsep]
+    \item Make a prediction
+    \item Ask the model: ``which pixels contributed most to this prediction?''
+    \item The answer is a heatmap --- red areas = high importance, blue = low importance
+    \item Overlay the heatmap on the original image
+\end{enumerate}
+
+\textbf{Why it matters:} Disaster teams won't trust a black-box number. If the heatmap shows the model focused on actual debris/scarring, they can trust the prediction. If it focused on irrelevant areas, they know to ignore it.
+
+\textbf{r6 projected results:} Accuracy 86--88\%, F1 78--81\%, AUC 92--94\% (projected based on published research showing Focal Loss gives +2--4\% F1, TTA gives +1--3\% accuracy).
+
+% ============================================================================
+\part{The Three Lifecycles}
+% ============================================================================
+
+\section{How the 7 Experiments Map to 3 Lifecycles}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{clp{9cm}}
+        \toprule
+        \textbf{LC} & \textbf{Experiments} & \textbf{Theme} \\
+        \midrule
+        1 & r0, r1, r2 & Building the foundation --- baseline, transfer learning, modern architecture \\
+        2 & r3, r4, r5 & Improving reliability --- calibration, ensemble, CNN+Transformer hybrid \\
+        3 & r6 & Addressing remaining gaps --- class imbalance, fragility, explainability \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Lifecycle 1 --- Building the Foundation}
+
+\textbf{Goal:} Get a working landslide detection system and establish baseline performance.
+
+\textbf{Story:}
+\begin{enumerate}[noitemsep]
+    \item Started with AlexNet (simple, fast, proves the pipeline works)
+    \item Found that training from scratch is not enough with 2,190 images
+    \item Added transfer learning (ImageNet pre-training) --- small improvement
+    \item Replaced AlexNet with EfficientNet-B3 --- recall jumped 11\%, catches more landslides
+\end{enumerate}
+
+\textbf{Key result:} EfficientNet-B3 catches 78\% of landslides (vs AlexNet's 67\%).
+
+\textbf{What you say about LC2 preview:} ``The model is overconfident and using only one model is risky. In LC2, I will fix confidence calibration and add a second model.''
+
+\section{Lifecycle 2 --- Improving Reliability}
+
+\textbf{Goal:} Make predictions trustworthy and more accurate through calibration and ensemble.
+
+\textbf{Story:}
+\begin{enumerate}[noitemsep]
+    \item Fixed overconfident predictions with temperature scaling (T=1.1511)
+    \item Combined EfficientNet-B3 + AlexNet in an ensemble (60/40 weights)
+    \item Found that two CNNs share the same blind spots
+    \item Replaced AlexNet with ViT-B/16 --- biggest single improvement (+3\% F1)
+\end{enumerate}
+
+\textbf{Key result:} CNN+Transformer ensemble reaches 84.55\% accuracy, 75.98\% F1.
+
+\textbf{Key lesson:} Diversity of architecture matters more than number of models.
+
+\textbf{What you say about LC3 preview:} ``40 landslides are still being missed, some borderline cases flip with orientation, and the model is a black box. In LC3, I will address all three.''
+
+\section{Lifecycle 3 --- Addressing Remaining Gaps}
+
+\textbf{Goal:} Fix class imbalance, prediction fragility, and add explainability.
+
+\textbf{Story:}
+\begin{enumerate}[noitemsep]
+    \item Added Focal Loss to focus on hard examples instead of easy ones
+    \item Added TTA (5 views averaged) to stabilize borderline predictions
+    \item Added Grad-CAM to show which image regions the model looks at
+\end{enumerate}
+
+\textbf{Key result:} Projected 86--88\% accuracy, 78--81\% F1. Grad-CAM enables visual verification.
+
+\textbf{Future improvements:} Pixel-level segmentation (U-Net), real-time satellite feeds, 4-channel input with Near-Infrared.
+
+% ============================================================================
+\part{The Complete Metrics Table}
+% ============================================================================
+
+\section{All Results at a Glance}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{clccccc}
+        \toprule
+        \textbf{LC} & \textbf{Experiment} & \textbf{Acc} & \textbf{Prec} & \textbf{Recall} & \textbf{F1} & \textbf{AUC} \\
+        \midrule
+        1 & r0 AlexNet scratch & 78.54 & 69.42 & 65.98 & 67.67 & 85.53 \\
+        1 & r1 AlexNet pretrained & 80.11 & 66.67 & 67.30 & 66.98 & 85.73 \\
+        1 & r2 EfficientNet-B3 & 79.97 & 63.72 & 78.20 & 70.21 & 88.93 \\
+        \midrule
+        2 & r3 + Temperature & 79.97 & 63.72 & 78.20 & 70.21 & 88.93 \\
+        2 & r4 + AlexNet ensemble & 82.40 & 70.59 & 75.36 & 72.97 & 89.83 \\
+        2 & r5 + ViT ensemble & 84.55 & 73.49 & 78.67 & 75.98 & 91.50 \\
+        \midrule
+        3 & r6 + FL + TTA + GC & 86--88 & 76--79 & 80--83 & 78--81 & 92--94 \\
+        \bottomrule
+    \end{tabular}
+    \caption{r6 values are projected based on published literature.}
+\end{table}
+
+\textbf{How to read this table:}
+\begin{itemize}[noitemsep]
+    \item Accuracy went from 78.54\% to 86--88\% (total gain: +8--10\%)
+    \item F1 went from 67.67\% to 78--81\% (total gain: +10--13\%)
+    \item AUC went from 85.53\% to 92--94\% (total gain: +7--9\%)
+    \item Each improvement was motivated by a specific problem found in the previous experiment
+\end{itemize}
+
+% ============================================================================
+\part{The Pipeline Output}
+% ============================================================================
+
+\section{What Happens When You Run a Prediction}
+
+\begin{enumerate}
+    \item You give the system a satellite image and a country name
+    \item \textbf{Phase 1} runs the image through the CNN ensemble (EfficientNet-B3 + ViT-B/16)
+    \item If the confidence is above 46.7\%, it is classified as ``landslide''
+    \item \textbf{Phase 2} takes the country name, looks up historical patterns using the HMM
+    \item The system outputs a complete risk report
+\end{enumerate}
+
+\section{Example Output --- Landslide Detected}
+
+\begin{verbatim}
+Phase 1 - LANDSLIDE (confidence: 95.9%)
+Phase 2 - Type: Landslide
+          Occurrence probability: 30.0%
+          Peak risk month: July
+          Future forecast:
+            Step 1: Landslide (prob=26.4%)
+            Step 2: Landslide (prob=21.4%)
+            Step 3: Landslide (prob=18.1%)
+
+LANDSLIDE DETECTED - Type: Landslide (occurrence probability: 30%)
+\end{verbatim}
+
+\textbf{What each line means:}
+\begin{itemize}[noitemsep]
+    \item \textbf{Phase 1 - LANDSLIDE (95.9\%):} The CNN ensemble is 95.9\% confident this image contains a landslide
+    \item \textbf{Type: Landslide:} The HMM predicts the most likely type
+    \item \textbf{Occurrence probability: 30\%:} Based on historical data for this country, there is a 30\% chance of this type of event
+    \item \textbf{Peak risk month: July:} This country's landslide activity peaks in July (monsoon season)
+    \item \textbf{Future forecast:} The probability of similar events in the next 1--3 time steps
+\end{itemize}
+
+\section{Example Output --- No Landslide}
+
+\begin{verbatim}
+NO LANDSLIDE DETECTED (confidence: 78%)
+\end{verbatim}
+
+This means the CNN ensemble is 78\% confident that the image does NOT contain a landslide. Phase 2 is not triggered.
+
+% ============================================================================
+\part{How to Run the Project}
+% ============================================================================
+
+\section{Quick Version (4 Commands)}
+
+After cloning and setting up the environment:
+
+\begin{verbatim}
+cd project
+
+# Train (skip if checkpoints already exist)
+python pipeline/run_pipeline.py --mode train
+
+# Predict on a landslide image
+python pipeline/run_pipeline.py --mode predict \
+    --image data/processed/test/debris_flow/ls_test_0011.jpg \
+    --country India --forecast 3
+
+# Evaluate model performance
+python phase1_alexnet/evaluate.py
+\end{verbatim}
+
+See \texttt{run\_guide.tex} for the full step-by-step setup instructions.
+
+% ============================================================================
+\part{What Makes This Project Strong}
+% ============================================================================
+
+\section{If Your Guide Asks ``What is Your Contribution?''}
+
+\begin{enumerate}
+    \item \textbf{Two-phase pipeline:} No existing system combines image detection (CNN) with temporal forecasting (HMM). Most projects only detect --- yours also predicts.
+    \item \textbf{CNN + Transformer ensemble:} Using architecturally diverse models (EfficientNet-B3 for local patterns + ViT-B/16 for global patterns) is more effective than using two similar models.
+    \item \textbf{Systematic methodology:} 7 experiments across 3 lifecycles, each motivated by measured weaknesses. This is how real research is done.
+    \item \textbf{Calibrated confidence:} Temperature scaling ensures the confidence scores are trustworthy, not just high numbers.
+    \item \textbf{Explainability:} Grad-CAM lets users verify what the model is looking at. Essential for safety-critical applications.
+    \item \textbf{Real data:} Trained on peer-reviewed datasets (HR-GLDD + NASA GLC), not synthetic data.
+\end{enumerate}
+
+\section{Honest Limitations (Know These Too)}
+
+\begin{enumerate}[noitemsep]
+    \item Image dataset is small (2,190 training images) --- larger datasets would improve accuracy
+    \item r6 metrics are projected, not yet validated with actual retraining
+    \item HMM doesn't model the time gap between events (only the sequence)
+    \item Not tested on live satellite imagery
+    \item Multi-class classification (6 types) is harder and less accurate than binary (landslide vs not)
+\end{enumerate}
+
+\textbf{Important:} Being honest about limitations shows maturity. Your guide will respect this more than false claims.
+
+% ============================================================================
+\part{Reading Order for Other Files}
+% ============================================================================
+
+\section{Which Files to Read and When}
+
+You have already read this file, which covers everything. The other files go deeper into specific topics. Read them in this order if you have time:
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{clp{7cm}}
+        \toprule
+        \textbf{Priority} & \textbf{File} & \textbf{When to Read} \\
+        \midrule
+        1 & \texttt{lifecycle1\_opening.tex} & Before your first meeting --- speaking guide \\
+        2 & \texttt{lifecycle1\_qa.tex} & Before LC1 presentation --- Q\&A prep \\
+        3 & \texttt{lifecycle2\_qa.tex} & Before LC2 presentation --- Q\&A prep \\
+        4 & \texttt{lifecycle3\_qa.tex} & Before LC3 presentation --- Q\&A prep \\
+        5 & \texttt{explanation.tex} & If you need more detail on AI/ML terms \\
+        6 & \texttt{evaluation\_metrics.tex} & If you need deeper understanding of metrics \\
+        7 & \texttt{comparison\_and\_metrics.tex} & Beginner-friendly comparison of all 7 results \\
+        \midrule
+        Ref & \texttt{content.tex} & Full project documentation \\
+        Ref & \texttt{run\_guide.tex} & How to set up and run the project \\
+        Ref & \texttt{results.tex} -- \texttt{results6.tex} & Detailed metrics for each experiment \\
+        Ref & \texttt{output1.tex} & Sample prediction output \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\end{document}

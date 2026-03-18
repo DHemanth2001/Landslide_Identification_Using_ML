@@ -21,6 +21,24 @@
 \textbf{Environment:} conda landslide-ml (PyTorch cu124, Python 3.10) \\
 \textbf{Base:} EfficientNet-B3 (results2) + ViT-B/16 (results5) 
 
+\section{Motivation: Why Replace AlexNet with Vision Transformer?}
+
+The r4 ensemble (EfficientNet-B3 + AlexNet) improved all metrics simultaneously (accuracy 82.40\%, F1 72.97\%), validating the ensemble approach. However, AlexNet was clearly the weaker member --- the ensemble was being held back:
+
+\begin{enumerate}
+    \item \textbf{AlexNet is architecturally outdated:}\\
+          AlexNet's 5 convolutional layers and 227$\times$227 input resolution are fundamentally limited compared to modern architectures. In the r4 ensemble, AlexNet contributed 40\% of the prediction weight but its standalone accuracy (78.54\%) was significantly below EfficientNet-B3 (79.97\%). Replacing the weaker member with a stronger model should yield larger ensemble gains.
+
+    \item \textbf{Both r4 ensemble members are CNNs --- same architectural bias:}\\
+          EfficientNet-B3 and AlexNet are both convolutional neural networks. CNNs process images through local sliding kernels, meaning they excel at \textit{local texture features} (soil color, vegetation edges) but struggle with \textit{global spatial relationships} (``the debris trail extends from the mountaintop to the valley''). Two CNNs in an ensemble share this blind spot. A Vision Transformer (ViT) processes images as flattened patches with multi-head self-attention, giving it a \textit{global receptive field from the first layer}. Combining CNN + Transformer creates a genuinely diverse ensemble that covers both local and global feature spaces.
+
+    \item \textbf{ViT-B/16 has proven performance on remote sensing:}\\
+          Recent literature shows Vision Transformers achieving state-of-the-art results on satellite imagery classification tasks, particularly where spatial context matters (e.g., identifying landslide extent across a mountainside). ViT-B/16 with 224$\times$224 patch-based input and 12 transformer layers offers a strong complementary signal to EfficientNet-B3's 300$\times$300 convolutional features.
+
+    \item \textbf{Targeting the remaining 40 false negatives:}\\
+          The r4 confusion matrix showed 40 missed landslides and 68 false positives. Many of these failures involved images where the landslide was spatially distributed across the frame (ViT's global attention should help) or where local textures were ambiguous (diversity in ensemble members should break the tie).
+\end{enumerate}
+
 \section{Improvements Implemented}
 
 \begin{enumerate}

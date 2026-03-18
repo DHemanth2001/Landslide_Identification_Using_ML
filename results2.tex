@@ -20,6 +20,24 @@
 \noindent\textbf{GPU:} NVIDIA RTX 2000 Ada Generation \\
 \textbf{Environment:} conda landslide-ml (PyTorch cu124, Python 3.10) \\
 
+\section{Motivation: Why Move from AlexNet to EfficientNet-B3?}
+
+The r0/r1 baseline exposed three critical limitations of AlexNet that justified upgrading to a modern architecture:
+
+\begin{enumerate}
+    \item \textbf{AlexNet's shallow feature hierarchy limits recall:}\\
+          With only 5 convolutional layers, AlexNet extracts relatively coarse features. The r1 recall of 74.41\% means 54 out of 211 landslides were missed. Many of these false negatives involved subtle landslide signatures (thin debris trails, partially vegetated scars) that require deeper feature hierarchies to detect. EfficientNet-B3, with its compound-scaled depth of 26+ convolutional blocks, can capture these fine-grained patterns.
+
+    \item \textbf{Low input resolution discards spatial detail:}\\
+          AlexNet's 227$\times$227 input aggressively downsamples satellite imagery, losing small but diagnostic features like individual rock distributions or narrow erosion channels. EfficientNet-B3's native 300$\times$300 resolution preserves 74\% more pixel information per image.
+
+    \item \textbf{Transfer learning from ImageNet:}\\
+          AlexNet in r0/r1 was trained from scratch on only 2,190 images --- far too few for a deep model to learn robust features. EfficientNet-B3 comes pre-trained on 1.2M ImageNet images, providing a rich feature foundation (edges, textures, shapes) that can be fine-tuned for landslide detection with minimal data. This is especially important given our limited training set size.
+
+    \item \textbf{Parameter efficiency:}\\
+          Despite being far more powerful, EfficientNet-B3 has only $\sim$12M parameters compared to AlexNet's $\sim$62M, thanks to compound scaling. This means faster training, less overfitting risk, and better generalization on our small dataset.
+\end{enumerate}
+
 \section{Improvements Implemented}
 
 \begin{enumerate}

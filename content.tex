@@ -1,0 +1,267 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{float}
+
+\title{Landslide Identification Using Machine Learning \\ \large Project Content and Documentation}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Why This Project Was Chosen}
+% ============================================================================
+
+Landslides are one of the most destructive and frequently occurring natural disasters in the world. They cause thousands of deaths every year, destroy infrastructure, displace communities, and inflict billions of dollars in economic loss. Countries like India, Nepal, China, the Philippines, and parts of South America are particularly vulnerable because of their mountainous terrain, heavy monsoon rainfall, and rapid urban expansion into unstable slopes.
+
+Despite the severity of the problem, most traditional landslide identification systems rely on manual field surveys, which are slow, expensive, and impossible to scale across large geographic areas. Satellite imagery is widely available but analyzing it manually by experts is time-consuming and not practical for real-time monitoring or early warning systems.
+
+This project was chosen to address a critical real-world problem using modern machine learning techniques. The goal is to build an automated system that can not only detect whether a satellite image contains a landslide but also classify what type of landslide it is and predict when and where the next landslide is likely to occur. This makes the system useful not just for detection after an event but also for prevention and preparedness before one happens.
+
+The problem is also academically significant because it requires combining two fundamentally different types of machine learning: deep learning on visual data (images) and probabilistic sequential modeling on historical event data (time series). This makes the project more challenging and more comprehensive than a standard image classification task.
+
+% ============================================================================
+\section{How This Project Is Different from Existing Systems}
+% ============================================================================
+
+Several landslide identification systems already exist, but they each have significant limitations. This project addresses those limitations directly.
+
+Most existing systems use only remote sensing indices such as NDVI (Normalized Difference Vegetation Index) or change detection algorithms to flag potential landslide zones. These methods detect changes in vegetation or surface texture but cannot classify what type of landslide occurred or predict future events.
+
+Some systems use Support Vector Machines or Random Forests trained on terrain features like slope angle, elevation, and land cover. While effective for susceptibility mapping, these models do not process raw image data and cannot generalize across different geographic regions without manual feature engineering.
+
+A few recent deep learning systems apply U-Net or ResNet architectures for pixel-level segmentation of landslides in satellite images. These models are powerful but require very large annotated datasets and are not connected to any temporal prediction component.
+
+None of the commonly available landslide identification systems combine image classification with a probabilistic future prediction model. This project is different in the following ways:
+
+\begin{enumerate}
+    \item It uses a \textbf{two-phase architecture} where Phase 1 handles image-based detection and Phase 2 handles type classification and future prediction independently. Each phase can be improved or replaced without breaking the other.
+
+    \item Phase 2 is trained on \textbf{9,471 real-world landslide events} from the NASA Global Landslide Catalog spanning 141 countries and over 28 years, making the predictions based on actual historical patterns rather than synthetic assumptions.
+
+    \item The system produces not just a binary yes/no decision but a \textbf{complete risk profile} including the type of landslide, the probability of occurrence, the peak risk month for the region, historical fatality rates, and a multi-step forecast of what types of landslides are likely to happen next.
+
+    \item The models were trained on the \textbf{HR-GLDD dataset} which contains high-resolution satellite patches with precise pixel-level masks, making it far more accurate than systems trained on coarse resolution imagery.
+\end{enumerate}
+
+% ============================================================================
+\section{Dataset Sources and Collection}
+% ============================================================================
+
+\subsection{Phase 1 Dataset --- HR-GLDD}
+
+This dataset was obtained from Zenodo, a scientific data repository maintained by CERN, under DOI 7189381. It was created by researchers who manually annotated satellite images with pixel-level landslide masks.
+
+The original dataset consists of numpy array files in the format $(N, 128, 128, 4)$ representing $N$ patches of $128 \times 128$ pixels with 4 spectral bands --- Red, Green, Blue, and Near-Infrared (NIR). The label files are binary masks of shape $(N, 128, 128, 1)$ where each pixel is labeled 1 for landslide and 0 for background.
+
+Since this project uses a classification (not segmentation) approach, the numpy arrays were converted to JPEG images using a custom script. Patches where more than 5\% of pixels were labeled as landslide were classified as landslide images. For the non-landslide class, $64 \times 64$ sub-crops were extracted from regions where the mask was entirely zero, then resized to $128 \times 128$ pixels.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Split} & \textbf{Landslide} & \textbf{Non-Landslide} & \textbf{Total} \\
+        \midrule
+        Training   & 616   & 1,574 & 2,190 \\
+        Validation & 158   & 392   & 550 \\
+        Test       & 211   & 488   & 699 \\
+        \bottomrule
+    \end{tabular}
+    \caption{HR-GLDD dataset splits after conversion.}
+\end{table}
+
+\subsection{Phase 2 Dataset --- NASA Global Landslide Catalog (GLC)}
+
+This dataset was downloaded from the NASA Open Data Portal. It contains 11,033 records of global landslide events recorded between 1970 and 2019. After filtering for required fields, 9,471 complete records were used for training.
+
+Each record contains the event date, country name, landslide category (type), landslide trigger, landslide size, and fatality count. The landslide categories are mapped to 7 canonical types: Landslide, Debris Flow, Mudslide, Rockfall, Earth Flow, Translational Slide, and Complex Landslide. The dataset covers 141 countries, making it truly global.
+
+This dataset was chosen specifically because it is publicly available, peer-reviewed, curated by NASA scientists, and contains enough temporal breadth and geographic diversity to train a meaningful HMM for sequential prediction.
+
+% ============================================================================
+\section{Project Architecture}
+% ============================================================================
+
+The system is designed as a pipeline with two sequential phases. When a satellite image is provided, it first passes through Phase 1. The output of Phase 1 determines whether Phase 2 is invoked.
+
+\subsection{Phase 1 --- CNN Image Classification}
+
+The input is a satellite or aerial image of any size, which is resized to the model's native resolution. During training, data augmentation is applied including random horizontal flipping and color jitter to improve generalization. The image is normalized using ImageNet mean and standard deviation values.
+
+The project evolved through multiple architectures across three lifecycles:
+\begin{itemize}[noitemsep]
+    \item \textbf{r0--r1:} AlexNet (5 conv layers, 227$\times$227 input, $\sim$62M parameters)
+    \item \textbf{r2--r4:} EfficientNet-B3 (compound-scaled CNN, 300$\times$300 input, $\sim$12M parameters)
+    \item \textbf{r5--r6:} Ensemble of EfficientNet-B3 + ViT-B/16 (CNN-Transformer hybrid)
+\end{itemize}
+
+The final output is a softmax probability giving the confidence for each class.
+
+\subsection{Phase 2 --- CategoricalHMM}
+
+Phase 2 takes the country name as context input. The historical event records from the NASA GLC are grouped by country and sorted chronologically to form observation sequences. Each observation is an integer representing one of the 42 combined type$\times$trigger symbols.
+
+The HMM has 8 hidden states representing distinct landslide regimes. The transition matrix captures how likely it is to move from one regime to another. The emission matrix captures which types of landslides are most commonly observed in each regime.
+
+Training uses the Baum-Welch algorithm (Expectation-Maximization) which iteratively adjusts the start probabilities, transition matrix, and emission matrix to maximize the likelihood of the observed sequences.
+
+For prediction, Viterbi decoding finds the most likely sequence of hidden states. The current state determines the most likely landslide type. The transition matrix is propagated forward $N$ steps to forecast future events.
+
+\subsection{Pipeline Integration}
+
+When the full pipeline runs, Phase 1 classifies the image. If the confidence exceeds the threshold (46.7\%) and the prediction is landslide, Phase 2 is automatically triggered. The combined output includes the image label, confidence score, landslide type, occurrence probability, peak risk month, historical statistics, and a multi-step future forecast.
+
+% ============================================================================
+\section{Training Time}
+% ============================================================================
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Component} & \textbf{CPU} & \textbf{GPU} \\
+        \midrule
+        Phase 1 (CNN, 30 epochs) & 4--6 hours & 15--25 minutes \\
+        Phase 2 (HMM, 100 iterations) & 10--30 seconds & N/A (CPU only) \\
+        \midrule
+        \textbf{Total} & \textbf{4--6 hours} & \textbf{$\sim$20--30 minutes} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Training time estimates.}
+\end{table}
+
+% ============================================================================
+\section{Metrics Calculated and What They Mean}
+% ============================================================================
+
+\subsection{Phase 1 --- Image Classification Metrics}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{lp{10cm}}
+        \toprule
+        \textbf{Metric} & \textbf{Description} \\
+        \midrule
+        \textbf{Accuracy} & Overall percentage of correctly classified images. Can be misleading with imbalanced classes. \\
+        \textbf{Precision} & Out of all images predicted as landslide, what fraction actually were. Low precision = false alarms. \\
+        \textbf{Recall} & Out of all actual landslide images, what fraction were detected. Low recall = missed landslides (dangerous). \\
+        \textbf{F1-Score} & Harmonic mean of precision and recall. Most useful metric for imbalanced tasks. \\
+        \textbf{ROC-AUC} & Model's ability to rank positive examples above negative examples across all thresholds. Above 85\% is good. \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Phase 2 --- HMM Metrics}
+
+\textbf{Log-Likelihood} is the primary metric for HMM evaluation. It measures how well the trained model explains the observed sequences. The training log-likelihood is $-7314.96$ across 9,442 observations. The per-observation log-likelihood is approximately $-0.775$, indicating the model has learned meaningful patterns.
+
+% ============================================================================
+\section{Can the Accuracy Be Improved?}
+% ============================================================================
+
+Yes. The project systematically improved accuracy through three lifecycles:
+
+\begin{enumerate}
+    \item \textbf{Transfer learning} (r1): Pre-trained ImageNet weights instead of training from scratch.
+    \item \textbf{Modern architecture} (r2): EfficientNet-B3 with compound scaling.
+    \item \textbf{Temperature calibration} (r3): Fixing overconfident softmax outputs.
+    \item \textbf{Ensemble methods} (r4--r5): Combining EfficientNet-B3 + ViT-B/16.
+    \item \textbf{Focal Loss + TTA} (r6): Addressing class imbalance and single-pass fragility.
+\end{enumerate}
+
+Overall improvement: 78.54\% (r0) $\to$ 86--88\% projected (r6).
+
+% ============================================================================
+\section{Comparison with Other Models}
+% ============================================================================
+
+\subsection{Phase 1 --- Image Classification}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{lccl}
+        \toprule
+        \textbf{Model} & \textbf{Parameters} & \textbf{Strength} & \textbf{Why/Why Not Used} \\
+        \midrule
+        AlexNet & 62M & Simple baseline & Used as starting point (r0--r1) \\
+        VGG-16 & 138M & More accurate & Too slow, too much memory \\
+        ResNet-50 & 25M & Residual connections & Needs transfer learning for small data \\
+        EfficientNet-B3 & 12M & Compound scaling & Used (r2--r6), best efficiency \\
+        ViT-B/16 & 86M & Global attention & Used in ensemble (r5--r6) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Phase 2 --- Sequential Modeling}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Model} & \textbf{Strength} & \textbf{Why/Why Not Used} \\
+        \midrule
+        LSTM/GRU & Learns long-term dependencies & Hard to interpret, needs more data \\
+        Random Forest & Simple classification & Cannot model temporal dynamics \\
+        CategoricalHMM & Full probabilistic model & Used: interpretable, gives probabilities \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+% ============================================================================
+\section{Possible Further Improvements}
+% ============================================================================
+
+\begin{enumerate}
+    \item Using a Vision Transformer or newer architectures for Phase 1.
+    \item Adding pixel-level segmentation (U-Net) for precise landslide boundaries.
+    \item Incorporating real-time satellite feeds (Sentinel-2, Landsat).
+    \item Building a web/mobile interface for user-friendly predictions.
+    \item Extending Phase 2 with continuous features (rainfall, seismic data, soil moisture).
+    \item Adding confidence calibration refinements (Focal Loss $\gamma$ sweep).
+    \item Training on multi-temporal before/after image pairs (Siamese networks).
+    \item Using 4-channel input (R, G, B, NIR) for NDVI computation.
+    \item Automated hyperparameter search (Optuna/Ray Tune).
+\end{enumerate}
+
+% ============================================================================
+\section{Questions a Guide or Examiner May Ask}
+% ============================================================================
+
+\subsection{Q: Why did you choose AlexNet over VGG or ResNet?}
+AlexNet was the starting baseline --- well-suited for binary classification, fast to train, easy to explain. The project then progressively upgraded to EfficientNet-B3 and ViT-B/16 across lifecycles.
+
+\subsection{Q: Why is the ROC-AUC much higher than accuracy?}
+ROC-AUC measures discriminative ability across all thresholds, not just 50\%. The high AUC tells us the model ranks landslide images higher than non-landslide images, but the default threshold may not be optimal. This was addressed in r4 by optimizing the threshold to 46.7\%.
+
+\subsection{Q: Why is the HMM trained on country-level sequences?}
+Landslide occurrence follows regional patterns driven by geology, climate, and topography. Grouping by country creates meaningful temporal sequences reflecting how landslide activity evolves within a region.
+
+\subsection{Q: What is Viterbi decoding?}
+A dynamic programming algorithm that finds the most likely sequence of hidden states given observations. More efficient than evaluating all possible state sequences.
+
+\subsection{Q: How does the future forecast work?}
+Starting from the current hidden state (Viterbi), the state probability is projected forward by multiplying the transition matrix. At each step, the emission matrix determines the most likely landslide type.
+
+\subsection{Q: Can this system be used for real-time warning?}
+Yes, with additional engineering. Phase 1 processes images in under 1 second, Phase 2 in milliseconds. The bottleneck is data ingestion --- with Sentinel-2 or Copernicus integration, alerts could be generated within hours of a satellite overpass.
+
+\subsection{Q: How do you handle class imbalance?}
+Through multiple techniques: WeightedRandomSampler (data-level), Focal Loss (loss-level), and optimized decision threshold (inference-level).
+
+\subsection{Q: What are the limitations?}
+Small image dataset, r6 metrics are projected (not yet validated), HMM doesn't model inter-event timing, system not tested on live satellite imagery, multi-class classification needs more data.
+
+\end{document}
