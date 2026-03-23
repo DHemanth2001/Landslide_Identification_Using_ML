@@ -181,19 +181,19 @@
     \begin{columns}
         \begin{column}{0.5\textwidth}
             \centering
-            \textbf{Landslide Image}\\[0.3cm]
-            \includegraphics[width=0.75\textwidth]{project/data/processed/test/debris_flow/ls_test_0011.jpg}\\[0.2cm]
+            \textbf{Landslide Image}\\[0.15cm]
+            \includegraphics[width=0.65\textwidth,height=0.55\textheight,keepaspectratio]{project/data/processed/test/debris_flow/ls_test_0011.jpg}\\[0.1cm]
             \small Debris flow --- exposed soil, vegetation loss
         \end{column}
         \begin{column}{0.5\textwidth}
             \centering
-            \textbf{Non-Landslide Image}\\[0.3cm]
-            \includegraphics[width=0.75\textwidth]{project/data/processed/test/non_landslide/nls_test_0001.jpg}\\[0.2cm]
+            \textbf{Non-Landslide Image}\\[0.15cm]
+            \includegraphics[width=0.65\textwidth,height=0.55\textheight,keepaspectratio]{project/data/processed/test/non_landslide/nls_test_0001.jpg}\\[0.1cm]
             \small Normal terrain --- intact vegetation
         \end{column}
     \end{columns}
 
-    \vspace{0.3cm}
+    \vspace{0.15cm}
     \centering
     \small The model must learn to distinguish these 128$\times$128 satellite patches
 \end{frame}
@@ -201,9 +201,9 @@
 % ---- Slide 9: Training Output ----
 \begin{frame}{Training Output: Loss \& Accuracy Curves}
     \centering
-    \includegraphics[width=0.85\textwidth]{project/plots/training_history.png}
+    \includegraphics[width=0.75\textwidth,height=0.6\textheight,keepaspectratio]{project/plots/training_history.png}
 
-    \vspace{0.2cm}
+    \vspace{0.1cm}
     \small Training loss decreases over epochs $\to$ model is learning.\\
     Validation accuracy plateaus $\to$ model has reached its capacity with this architecture.
 \end{frame}
@@ -213,12 +213,12 @@
     \begin{columns}
         \begin{column}{0.5\textwidth}
             \centering
-            \includegraphics[width=0.95\textwidth]{project/plots/confusion_matrix.png}\\[0.1cm]
+            \includegraphics[width=0.85\textwidth,height=0.65\textheight,keepaspectratio]{project/plots/confusion_matrix.png}\\[0.1cm]
             \small Confusion Matrix --- shows TP, FP, FN, TN counts
         \end{column}
         \begin{column}{0.5\textwidth}
             \centering
-            \includegraphics[width=0.95\textwidth]{project/plots/roc_curve.png}\\[0.1cm]
+            \includegraphics[width=0.85\textwidth,height=0.65\textheight,keepaspectratio]{project/plots/roc_curve.png}\\[0.1cm]
             \small ROC Curve --- AUC measures ranking ability
         \end{column}
     \end{columns}
