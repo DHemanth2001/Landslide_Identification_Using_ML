@@ -1,6 +1,8 @@
 """
 End-to-end Landslide Identification Pipeline.
-Chains Phase 1 (AlexNet image classification) → Phase 2 (HMM type + future forecast).
+
+Phase 1: MSAFusionNet ensemble (ConvNeXt-CBAM-FPN + SwinV2-Small) → 6-class classification
+Phase 2: Bi-LSTM + Multi-Head Attention → temporal type + occurrence forecast
 
 Usage:
     python pipeline/run_pipeline.py --mode train
@@ -21,28 +23,56 @@ from tqdm import tqdm
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
-from phase1_alexnet.predict import load_alexnet_model, predict_single_image
+from phase1_alexnet.predict import load_model, predict_single_image
 from phase1_alexnet.ensemble_predict import load_ensemble, predict_ensemble
 from phase1_alexnet.train import run_training
+
+# Phase 2: Try LSTM first, fall back to HMM
+LSTM_AVAILABLE = False
+HMM_AVAILABLE = False
+
 try:
-    from phase2_hmm.data_preprocessing import (
+    from phase2_lstm.temporal_predict import (
+        load_model_and_encoders as load_lstm_model_and_encoders,
+        classify_and_forecast as lstm_classify_and_forecast,
+        format_phase2_output as lstm_format_output,
+    )
+    from phase2_lstm.temporal_train import train_temporal_model
+    from phase2_lstm.data_preprocessing import (
         load_glc_data,
         encode_features,
-        build_observation_sequences,
         get_country_risk_profile,
+        build_observation_sequences,
+    )
+    LSTM_AVAILABLE = True
+except ImportError as e:
+    print(f"LSTM Phase 2 not available: {e}")
+
+try:
+    from phase2_hmm.data_preprocessing import (
+        load_glc_data as hmm_load_glc_data,
+        encode_features as hmm_encode_features,
+        build_observation_sequences as hmm_build_obs_seq,
+        get_country_risk_profile as hmm_get_country_risk_profile,
     )
     from phase2_hmm.hmm_model import (
-        build_hmm,
-        load_encoder,
-        load_hmm_model,
-        save_encoder,
-        save_hmm_model,
-        train_hmm,
+        build_hmm, load_hmm_model, save_hmm_model,
+        load_encoder, save_encoder, train_hmm,
     )
-    from phase2_hmm.hmm_predict import classify_and_forecast, format_phase2_output
+    from phase2_hmm.hmm_predict import (
+        classify_and_forecast as hmm_classify_and_forecast,
+        format_phase2_output as hmm_format_output,
+    )
     HMM_AVAILABLE = True
 except ImportError:
-    HMM_AVAILABLE = False
+    pass
+
+# Use LSTM data_preprocessing if available, else HMM's
+if not LSTM_AVAILABLE and HMM_AVAILABLE:
+    load_glc_data = hmm_load_glc_data
+    encode_features = hmm_encode_features
+    get_country_risk_profile = hmm_get_country_risk_profile
+
 from utils.plot_utils import plot_training_history
 
 SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
@@ -50,39 +80,44 @@ SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
 
 class LandslideIdentificationPipeline:
     """
-    Two-phase pipeline:
-      Phase 1 — AlexNet determines if an image contains a landslide.
-      Phase 2 — HMM classifies the type, occurrence probability, and future forecast.
+    Two-phase unified pipeline:
+      Phase 1 — MSAFusionNet ensemble → 6-class landslide type classification
+      Phase 2 — Bi-LSTM + Attention → temporal forecasting (type, probability, future)
     """
 
-    def __init__(
-        self,
-        alexnet_checkpoint: str = None,
-        hmm_model_path: str = None,
-        hmm_encoder_path: str = None,
-    ):
+    def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # Load Phase 1 ensemble (EfficientNet-B3 + ViT-B/16)
-        print("Loading Phase 1 ensemble (EfficientNet-B3 + ViT-B/16) ...")
-        self.effnet, self.vit_model, _ = load_ensemble(self.device)
+        # ── Phase 1: Load ensemble ────────────────────────────────────────
+        print("Loading Phase 1 ensemble (ConvNeXt-CBAM-FPN + SwinV2-Small) ...")
+        self.convnext, self.swinv2, _ = load_ensemble(self.device)
 
-        # Load Phase 2 model + risk profile
-        if HMM_AVAILABLE:
-            hmm_path = hmm_model_path or config.HMM_MODEL_PATH
-            enc_path = hmm_encoder_path or config.HMM_ENCODER_PATH
-            print(f"Loading HMM from {hmm_path} ...")
-            self.hmm = load_hmm_model(hmm_path)
-            self.type_encoder = load_encoder(enc_path)
+        # ── Phase 2: Load temporal model ──────────────────────────────────
+        self.phase2_mode = None
+        self.risk_profile = None
+        self.df_encoded = None
 
-            # Build risk profile from NASA GLC for per-country stats
-            print("Loading NASA GLC risk profiles ...")
+        if config.ACTIVE_PHASE2 == "lstm" and LSTM_AVAILABLE and os.path.exists(config.LSTM_MODEL_PATH):
+            print("Loading Phase 2: Bi-LSTM + Attention ...")
+            self.lstm_model, self.type_encoder, self.trigger_encoder, _ = load_lstm_model_and_encoders(self.device)
             df = load_glc_data()
-            df_enc, _, _ = encode_features(df)
-            self.risk_profile = get_country_risk_profile(df_enc)
-            print(f"Risk profiles loaded for {len(self.risk_profile)} countries.\n")
+            self.df_encoded, _, _ = encode_features(df)
+            self.risk_profile = get_country_risk_profile(self.df_encoded)
+            self.phase2_mode = "lstm"
+            print(f"Phase 2 ready (LSTM). Risk profiles for {len(self.risk_profile)} countries.\n")
+
+        elif HMM_AVAILABLE and os.path.exists(config.HMM_MODEL_PATH):
+            print("Loading Phase 2: HMM (legacy) ...")
+            self.hmm = load_hmm_model()
+            self.type_encoder = load_encoder()
+            df = hmm_load_glc_data()
+            df_enc, _, _ = hmm_encode_features(df)
+            self.risk_profile = hmm_get_country_risk_profile(df_enc)
+            self.phase2_mode = "hmm"
+            print(f"Phase 2 ready (HMM). Risk profiles for {len(self.risk_profile)} countries.\n")
+
         else:
-            print("HMM not available, skipping Phase 2 loading.\n")
+            print("Phase 2 not available (no trained model found).\n")
 
         print("Pipeline ready.\n")
 
@@ -92,34 +127,21 @@ class LandslideIdentificationPipeline:
         country: str = None,
         n_forecast_steps: int = 3,
         obs_sequence: np.ndarray = None,
-        # Legacy args kept for notebook compatibility
-        disaster_description: str = None,
         location: str = None,
-        duration: int = None,
-        year: int = None,
+        **kwargs,
     ) -> dict:
         """
-        Run end-to-end prediction for one image (multi-class).
+        Run end-to-end prediction for one image.
 
-        Phase 1 now directly predicts the specific landslide type:
-          non_landslide, rockfall, mudflow, debris_flow,
-          rotational_slide, translational_slide.
-
-        Args:
-            image_path:       Path to the input image.
-            country:          Country name for Phase 2 risk profile lookup.
-            n_forecast_steps: Number of future time steps to forecast.
-            obs_sequence:     Optional pre-built observation array for HMM.
-
-        Returns:
-            Unified result dict.
+        Phase 1 → 6-class classification
+        Phase 2 → temporal forecasting (if landslide detected)
         """
-        # ── Phase 1: Multi-class ensemble classification ─────────────────────
-        phase1_result = predict_ensemble(image_path, self.effnet, self.vit_model, self.device)
+        # ── Phase 1 ──────────────────────────────────────────────────────
+        phase1_result = predict_ensemble(
+            image_path, self.convnext, self.swinv2, self.device
+        )
 
-        # Support legacy 'location' arg as country
         effective_country = country or location
-
         is_landslide = phase1_result.get("is_landslide", phase1_result["label"] != "non_landslide")
         landslide_type = phase1_result.get("landslide_type", phase1_result["label"])
 
@@ -130,51 +152,66 @@ class LandslideIdentificationPipeline:
             "final_verdict": "",
         }
 
-        # ── Phase 2: Temporal forecast (only if landslide detected) ──────────
-        if is_landslide:
-            if HMM_AVAILABLE:
-                p2 = classify_and_forecast(
-                    self.hmm,
-                    self.type_encoder,
-                    self.risk_profile,
+        # ── Phase 2 (if landslide detected) ──────────────────────────────
+        if is_landslide and self.phase2_mode:
+            if self.phase2_mode == "lstm":
+                p2 = lstm_classify_and_forecast(
+                    self.lstm_model, self.type_encoder, self.risk_profile,
+                    country=effective_country,
+                    obs_sequence=obs_sequence,
+                    n_forecast_steps=n_forecast_steps,
+                    trigger_encoder=self.trigger_encoder,
+                    df_encoded=self.df_encoded,
+                )
+            else:
+                p2 = hmm_classify_and_forecast(
+                    self.hmm, self.type_encoder, self.risk_profile,
                     country=effective_country,
                     obs_sequence=obs_sequence,
                     n_forecast_steps=n_forecast_steps,
                 )
-                p2_flat = {
-                    "landslide_type":        landslide_type,
-                    "phase1_type":           landslide_type,
-                    "hmm_type":              p2["current_type"],
-                    "occurrence_probability": p2["occurrence_probability"],
-                    "hidden_state":          p2["hidden_state"],
-                    "peak_risk_month":       p2["peak_risk_month"],
-                    "future_forecast":       p2["future_forecast"],
-                    "risk_stats":            p2["risk_stats"],
-                    "country":               p2["country"],
-                    "next_event_forecast": [
-                        {
-                            "most_likely_state": f["landslide_type"],
-                            "probability":       f["probability"],
-                            "step":              f["step"],
-                        }
-                        for f in p2["future_forecast"]
-                    ],
-                }
-                result["phase2"] = p2_flat
-                prob_pct = int(p2["occurrence_probability"] * 100)
-                conf_pct = int(phase1_result["confidence"] * 100)
-                result["final_verdict"] = (
-                    f"LANDSLIDE DETECTED — "
-                    f"Type: {landslide_type} (confidence: {conf_pct}%) "
-                    f"| Occurrence probability: {prob_pct}%"
-                )
-            else:
-                conf_pct = int(phase1_result["confidence"] * 100)
-                result["final_verdict"] = (
-                    f"LANDSLIDE DETECTED — "
-                    f"Type: {landslide_type} (confidence: {conf_pct}%) "
-                    f"| Phase 2 HMM offline"
-                )
+
+            p2_flat = {
+                "landslide_type":         landslide_type,
+                "phase1_type":            landslide_type,
+                "hmm_type":               p2["current_type"],  # Keep key name for compat
+                "temporal_model_type":    p2["current_type"],
+                "occurrence_probability": p2["occurrence_probability"],
+                "hidden_state":           p2.get("hidden_state", 0),
+                "peak_risk_month":        p2["peak_risk_month"],
+                "future_forecast":        p2["future_forecast"],
+                "risk_stats":             p2["risk_stats"],
+                "country":                p2["country"],
+                "phase2_model":           self.phase2_mode,
+                "next_event_forecast": [
+                    {
+                        "most_likely_state": f["landslide_type"],
+                        "probability":       f["probability"],
+                        "step":              f["step"],
+                    }
+                    for f in p2["future_forecast"]
+                ],
+            }
+            # Add attention weights if LSTM
+            if "attention_weights" in p2:
+                p2_flat["attention_weights"] = p2["attention_weights"]
+
+            result["phase2"] = p2_flat
+            prob_pct = int(p2["occurrence_probability"] * 100)
+            conf_pct = int(phase1_result["confidence"] * 100)
+            result["final_verdict"] = (
+                f"LANDSLIDE DETECTED — "
+                f"Type: {landslide_type} (confidence: {conf_pct}%) "
+                f"| Occurrence probability: {prob_pct}% "
+                f"| Model: {self.phase2_mode.upper()}"
+            )
+        elif is_landslide:
+            conf_pct = int(phase1_result["confidence"] * 100)
+            result["final_verdict"] = (
+                f"LANDSLIDE DETECTED — "
+                f"Type: {landslide_type} (confidence: {conf_pct}%) "
+                f"| Phase 2 offline"
+            )
         else:
             conf_pct = int(phase1_result["confidence"] * 100)
             result["final_verdict"] = (
@@ -186,20 +223,9 @@ class LandslideIdentificationPipeline:
 
     def batch_predict(self, image_dir: str, output_csv: str = None,
                       country: str = None) -> pd.DataFrame:
-        """
-        Run prediction on all images in a directory.
-
-        Args:
-            image_dir:  Directory containing image files.
-            output_csv: If provided, save results to this CSV path.
-            country:    Country context for Phase 2.
-
-        Returns:
-            pd.DataFrame with one row per image.
-        """
+        """Run prediction on all images in a directory."""
         image_paths = [
-            str(p)
-            for p in sorted(Path(image_dir).iterdir())
+            str(p) for p in sorted(Path(image_dir).iterdir())
             if p.suffix.lower() in SUPPORTED_EXTENSIONS
         ]
         print(f"Found {len(image_paths)} images in {image_dir}")
@@ -217,6 +243,7 @@ class LandslideIdentificationPipeline:
                     "phase2_type":           res["phase2"]["landslide_type"] if res["phase2"] else None,
                     "phase2_probability":    res["phase2"]["occurrence_probability"] if res["phase2"] else None,
                     "phase2_peak_month":     res["phase2"]["peak_risk_month"] if res["phase2"] else None,
+                    "phase2_model":          res["phase2"]["phase2_model"] if res["phase2"] else None,
                     "verdict":               res["final_verdict"],
                 }
             except Exception as e:
@@ -225,117 +252,159 @@ class LandslideIdentificationPipeline:
 
         df = pd.DataFrame(rows)
         if output_csv:
-            os.makedirs(os.path.dirname(output_csv), exist_ok=True)
+            os.makedirs(os.path.dirname(output_csv) or ".", exist_ok=True)
             df.to_csv(output_csv, index=False)
             print(f"Results saved to {output_csv}")
-
         return df
 
-    def run_full_evaluation(
-        self, test_image_dir: str = None
-    ) -> dict:
-        """
-        Evaluate both phases and return a combined report.
-
-        Returns:
-            dict with phase1 and phase2 evaluation summaries.
-        """
+    def run_full_evaluation(self) -> dict:
+        """Evaluate both phases and return a combined report."""
         report = {}
 
-        # ── Phase 1 evaluation ────────────────────────────────────────────────
+        # ── Phase 1 ──────────────────────────────────────────────────────
         from phase1_alexnet.evaluate import run_evaluation
-        print("=== Phase 1 Evaluation ===")
-        phase1_results = run_evaluation()
-        report["phase1"] = {
-            "accuracy":  phase1_results["accuracy"],
-            "precision": phase1_results["precision"],
-            "recall":    phase1_results["recall"],
-            "f1":        phase1_results["f1"],
-            "roc_auc":   phase1_results.get("roc_auc"),
+
+        print("=== Phase 1 Evaluation (ConvNeXt-CBAM-FPN) ===")
+        p1_convnext = run_evaluation(model_name="convnext_cbam_fpn")
+        report["phase1_convnext"] = {
+            "accuracy": p1_convnext["accuracy"],
+            "f1": p1_convnext["f1"],
+            "roc_auc": p1_convnext.get("roc_auc"),
         }
 
-        # ── Phase 2 evaluation ────────────────────────────────────────────────
-        print("\n=== Phase 2 Evaluation ===")
-        df = load_glc_data()
-        df_enc, type_enc, _ = encode_features(df)
-        seqs, lengths, labels = build_observation_sequences(df_enc)
-
-        X = np.concatenate(seqs).astype(int).reshape(-1, 1)
-        ll = self.hmm.score(X, lengths)
-        print(f"HMM log-likelihood on all {sum(lengths)} observations: {ll:.4f}")
-        print(f"Per-observation log-likelihood: {ll/sum(lengths):.4f}")
-        report["phase2"] = {
-            "log_likelihood":     ll,
-            "per_obs_log_ll":     ll / sum(lengths),
-            "n_records":          sum(lengths),
-            "n_sequences":        len(seqs),
-            "n_countries":        len(labels),
+        print("\n=== Phase 1 Evaluation (SwinV2-Small) ===")
+        p1_swinv2 = run_evaluation(model_name="swinv2_s")
+        report["phase1_swinv2"] = {
+            "accuracy": p1_swinv2["accuracy"],
+            "f1": p1_swinv2["f1"],
+            "roc_auc": p1_swinv2.get("roc_auc"),
         }
 
-        print("\n=== Full Evaluation Report ===")
+        # ── Phase 2 ──────────────────────────────────────────────────────
+        if self.phase2_mode == "lstm":
+            print("\n=== Phase 2 Evaluation (Bi-LSTM + Attention) ===")
+            # Evaluate on test sequences
+            from phase2_lstm.data_preprocessing import build_sequences
+            df = load_glc_data()
+            df_enc, type_enc, trig_enc = encode_features(df)
+            sequences = build_sequences(df_enc, type_enc, trig_enc)
+
+            correct = 0
+            total = 0
+            for features, types, country in sequences:
+                if len(features) < 3:
+                    continue
+                input_feats = torch.tensor(features[:-1], dtype=torch.float32).unsqueeze(0).to(self.device)
+                lengths = torch.tensor([len(features) - 1], dtype=torch.long).to(self.device)
+                target = types[-1]
+
+                type_probs, _, _, _ = self.lstm_model.predict_step(input_feats, lengths)
+                pred = type_probs[0].argmax().item()
+                if pred == target:
+                    correct += 1
+                total += 1
+
+            p2_acc = correct / total if total > 0 else 0
+            print(f"LSTM type prediction accuracy: {p2_acc:.4f} ({correct}/{total})")
+            report["phase2"] = {
+                "model": "Bi-LSTM + Attention",
+                "type_accuracy": p2_acc,
+                "n_sequences": total,
+            }
+
+        elif self.phase2_mode == "hmm" and HMM_AVAILABLE:
+            print("\n=== Phase 2 Evaluation (HMM — legacy) ===")
+            df = hmm_load_glc_data()
+            df_enc, _, _ = hmm_encode_features(df)
+            seqs, lengths, _ = hmm_build_obs_seq(df_enc)
+            X = np.concatenate(seqs).astype(int).reshape(-1, 1)
+            ll = self.hmm.score(X, lengths)
+            report["phase2"] = {
+                "model": "HMM",
+                "log_likelihood": ll,
+                "per_obs_log_ll": ll / sum(lengths),
+            }
+
+        print("\n=== Full Report ===")
         print(json.dumps(report, indent=2, default=str))
         return report
 
 
-# ─── Training helpers ─────────────────────────────────────────────────────────
+# ─── Training ─────────────────────────────────────────────────────────────────
 
-def train_phase1(pretrained: bool = False, model_name: str = None) -> None:
-    """Train Phase 1 model and save best checkpoint."""
-    if model_name is None:
-        model_name = config.ACTIVE_MODEL
-    print(f"=== Training Phase 1: {model_name} ===")
-    model, history = run_training(pretrained=pretrained, model_name=model_name)
+def train_phase1():
+    """Train both Phase 1 models."""
+    print("=" * 60)
+    print("Training MSAFusionNet (ConvNeXt-Base + CBAM + FPN)")
+    print("=" * 60)
+    model1, history1 = run_training(model_name="convnext_cbam_fpn")
     plot_training_history(
-        history,
-        save_path=os.path.join(config.PLOTS_DIR, "training_history.png"),
+        history1,
+        save_path=os.path.join(config.PLOTS_DIR, "training_history_convnext.png"),
+    )
+
+    print("\n" + "=" * 60)
+    print("Training SwinV2-Small (ensemble partner)")
+    print("=" * 60)
+    model2, history2 = run_training(model_name="swinv2_s")
+    plot_training_history(
+        history2,
+        save_path=os.path.join(config.PLOTS_DIR, "training_history_swinv2.png"),
     )
 
 
-def train_phase2() -> None:
-    """Train HMM on NASA GLC records and save model + encoder."""
-    import joblib
-    print("\n=== Training Phase 2: HMM (NASA GLC) ===")
-    df = load_glc_data()
-    df_enc, type_enc, trig_enc = encode_features(df)
-    use_combined = config.HMM_USE_COMBINED_OBS
-    seqs, lengths, _ = build_observation_sequences(df_enc, use_combined=use_combined)
-
-    n_types = len(type_enc.classes_)
-    n_triggers = int(df_enc["trigger_code"].max() + 1)
-    n_symbols = n_types * n_triggers if use_combined else n_types
-
-    model = build_hmm(n_symbols=int(n_symbols))
-    model = train_hmm(model, seqs, lengths)
-    save_hmm_model(model)
-    save_encoder(type_enc)
-    joblib.dump(trig_enc, config.HMM_TRIGGER_ENCODER_PATH)
-    joblib.dump({"use_combined": use_combined, "n_types": n_types, "n_triggers": n_triggers},
-                os.path.join(config.CHECKPOINTS_DIR, "hmm_meta.pkl"))
-    print("Phase 2 training complete.")
+def train_phase2():
+    """Train Phase 2 model (LSTM or HMM based on config)."""
+    if config.ACTIVE_PHASE2 == "lstm" and LSTM_AVAILABLE:
+        print("\n" + "=" * 60)
+        print("Training Phase 2: Bi-LSTM + Multi-Head Attention")
+        print("=" * 60)
+        model, history, _, _ = train_temporal_model()
+        plot_training_history(
+            history,
+            save_path=os.path.join(config.PLOTS_DIR, "training_history_lstm.png"),
+        )
+    elif HMM_AVAILABLE:
+        import joblib
+        print("\n=== Training Phase 2: HMM (legacy) ===")
+        df = hmm_load_glc_data()
+        df_enc, type_enc, trig_enc = hmm_encode_features(df)
+        use_combined = config.HMM_USE_COMBINED_OBS
+        seqs, lengths, _ = hmm_build_obs_seq(df_enc, use_combined=use_combined)
+        n_types = len(type_enc.classes_)
+        n_triggers = int(df_enc["trigger_code"].max() + 1)
+        n_symbols = n_types * n_triggers if use_combined else n_types
+        model = build_hmm(n_symbols=int(n_symbols))
+        model = train_hmm(model, seqs, lengths)
+        save_hmm_model(model)
+        save_encoder(type_enc)
+        joblib.dump(trig_enc, config.HMM_TRIGGER_ENCODER_PATH)
+        joblib.dump({"use_combined": use_combined, "n_types": n_types, "n_triggers": n_triggers},
+                    os.path.join(config.CHECKPOINTS_DIR, "hmm_meta.pkl"))
+    else:
+        print("No Phase 2 model available for training.")
 
 
 # ─── CLI ──────────────────────────────────────────────────────────────────────
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Landslide Identification Pipeline"
+        description="Landslide Identification Pipeline (MSAFusionNet + Bi-LSTM)"
     )
     parser.add_argument(
         "--mode",
         choices=["train", "predict", "evaluate"],
         required=True,
-        help="train: train both models; predict: run on a single image; evaluate: full evaluation",
     )
-    parser.add_argument("--image", help="Path to image (required for --mode predict)")
-    parser.add_argument("--country", default=None, help="Country name for HMM risk profile")
-    parser.add_argument("--forecast", type=int, default=3, help="Number of future steps to forecast")
-    parser.add_argument("--pretrained", action="store_true", help="Use pretrained AlexNet weights")
+    parser.add_argument("--image", help="Path to image (for --mode predict)")
+    parser.add_argument("--country", default=None, help="Country for Phase 2")
+    parser.add_argument("--forecast", type=int, default=3, help="Forecast steps")
     args = parser.parse_args()
 
     if args.mode == "train":
-        train_phase1(pretrained=args.pretrained, model_name=config.ACTIVE_MODEL)
+        train_phase1()
         train_phase2()
-        print("\nBoth models trained successfully.")
+        print("\nAll models trained successfully.")
 
     elif args.mode == "predict":
         if not args.image:
@@ -346,21 +415,23 @@ def main():
             country=args.country,
             n_forecast_steps=args.forecast,
         )
-        print("\n=== Prediction Result (Multi-Class) ===")
+        print("\n=== Prediction Result ===")
         p1 = result["phase1"]
-        print(f"Phase 1 — {p1['label'].upper()} (confidence: {p1['confidence']*100:.1f}%)")
+        print(f"Phase 1 — {p1['label'].upper()} (confidence: {p1['confidence'] * 100:.1f}%)")
         print(f"  Per-class probabilities:")
         for cls, prob in p1["probabilities"].items():
             marker = " <--" if cls == p1["label"] else ""
-            print(f"    {cls:>20s}: {prob*100:.2f}%{marker}")
+            print(f"    {cls:>20s}: {prob * 100:.2f}%{marker}")
         if result["phase2"]:
             p2 = result["phase2"]
-            print(f"Phase 2 — Phase1 type: {p2['landslide_type']}, HMM type: {p2['hmm_type']}")
-            print(f"         Occurrence probability: {p2['occurrence_probability']*100:.1f}%")
-            print(f"         Peak risk month: {p2['peak_risk_month']}")
-            print(f"         Future forecast:")
+            print(f"Phase 2 ({p2['phase2_model'].upper()}) — "
+                  f"Type: {p2['temporal_model_type']}")
+            print(f"  Occurrence probability: {p2['occurrence_probability'] * 100:.1f}%")
+            print(f"  Peak risk month: {p2['peak_risk_month']}")
+            print(f"  Future forecast:")
             for f in p2["future_forecast"]:
-                print(f"           Step {f['step']}: {f['landslide_type']} (prob={f['probability']*100:.1f}%)")
+                print(f"    Step {f['step']}: {f['landslide_type']} "
+                      f"(prob={f['probability'] * 100:.1f}%)")
         print(f"\n{result['final_verdict']}")
 
     elif args.mode == "evaluate":

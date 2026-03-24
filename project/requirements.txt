@@ -7,7 +7,6 @@ scikit-learn
 seaborn
 openpyxl
 opencv-python
-albumentations
 numpy
 hmmlearn
 torchinfo

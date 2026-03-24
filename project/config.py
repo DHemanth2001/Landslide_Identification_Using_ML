@@ -11,68 +11,116 @@ PLOTS_DIR = os.path.join(BASE_DIR, "plots")
 
 EXCEL_FILE = os.path.join(EXCEL_DIR, "data set (1).xlsx")
 
-# ─── Phase 1: AlexNet & Modern Archs ──────────────────────────────────────────
-IMG_SIZE = (300, 300)       # EfficientNet-B3 native input size (was 227x227 for AlexNet)
-VIT_IMG_SIZE = (224, 224)   # ViT-B/16 uses 224x224
-BATCH_SIZE = 32            # reduced for EfficientNet-B3 (larger model, 300x300 inputs)
-NUM_EPOCHS = 30
-LEARNING_RATE = 0.0001     # head LR; features get 0.1x after unfreeze
-UNFREEZE_EPOCH = 10
-DROPOUT_RATE = 0.5
-NUM_CLASSES = 2
+# ─── Phase 1: Multi-Scale Attention Fusion Network ──────────────────────────
+# Architecture: ConvNeXt-Base + CBAM + FPN (primary) + SwinV2-Small (ensemble)
+# Base paper: ResM-FusionNet (2025), improved with ConvNeXt backbone + CBAM attention
+#
+# Reference papers:
+#   1. ResM-FusionNet (2025) — multi-scale residual fusion for landslide detection
+#   2. "A ConvNet for the 2020s" — ConvNeXt (Liu et al., CVPR 2022)
+#   3. "CBAM: Convolutional Block Attention Module" (Woo et al., ECCV 2018)
+#   4. "Swin Transformer V2" (Liu et al., CVPR 2022)
+#   5. "Focal Loss for Dense Object Detection" (Lin et al., ICCV 2017)
+
+# Model configuration
+CONVNEXT_IMG_SIZE = (224, 224)     # ConvNeXt-Base native pretrained size
+SWINV2_IMG_SIZE = (256, 256)       # SwinV2-Small native pretrained size
+IMG_SIZE = CONVNEXT_IMG_SIZE       # Primary model image size
+
+BATCH_SIZE = 16                    # Smaller batch for larger models + mixup
+NUM_EPOCHS = 50                    # More epochs for thorough convergence
+LEARNING_RATE = 5e-5               # Lower LR for pretrained backbones
+UNFREEZE_EPOCH = 8                 # Unfreeze backbone after 8 warm-up epochs
+DROPOUT_RATE = 0.4                 # Slightly less dropout with label smoothing
+NUM_CLASSES = 6                    # 6-class: non_landslide + 5 landslide types
+
+# Advanced training hyperparameters
+LABEL_SMOOTHING = 0.1              # Prevents overconfident predictions
+MIXUP_ALPHA = 0.3                  # Mixup interpolation strength
+CUTMIX_ALPHA = 1.0                 # CutMix interpolation strength
+MIXUP_PROB = 0.5                   # Probability of applying mixup vs cutmix
+GRADIENT_CLIP_NORM = 1.0           # Max gradient norm for stability
+EMA_DECAY = 0.9998                 # EMA smoothing factor (higher = smoother)
+WEIGHT_DECAY = 0.05                # AdamW weight decay (ConvNeXt paper setting)
+WARMUP_EPOCHS = 5                  # Linear LR warmup before cosine decay
+
+# Active model selection
+ACTIVE_MODEL = "convnext_cbam_fpn"  # "convnext_cbam_fpn" or "swinv2_s"
+
+# Checkpoint paths — new models
+CONVNEXT_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "convnext_cbam_fpn_best.pth")
+SWINV2_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "swinv2_s_best.pth")
+EMA_CONVNEXT_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "convnext_cbam_fpn_ema_best.pth")
+EMA_SWINV2_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "swinv2_s_ema_best.pth")
+
+# Legacy checkpoint paths (kept for backward compatibility)
 ALEXNET_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "alexnet_best.pth")
 EFFICIENTNET_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "efficientnet_b3_best.pth")
 VIT_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "vit_b_16_best.pth")
-ACTIVE_MODEL = "efficientnet_b3"  # "alexnet" or "efficientnet_b3" or "vit_b_16"
 
 # Dataset: HR-GLDD (from Zenodo 7189381), converted from numpy to JPEG
-# Splits: train / val / test  (val used as validation during training, test for final eval)
-# Actual counts after conversion:
+# 6-class multi-class classification
 TRAIN_LANDSLIDE = 616
 TRAIN_NON_LANDSLIDE = 1574
 VAL_LANDSLIDE = 158
 VAL_NON_LANDSLIDE = 392
 TEST_LANDSLIDE = 211
 TEST_NON_LANDSLIDE = 488
-DATASET_SPLITS = ["train", "val", "test"]  # val = validation during training
+DATASET_SPLITS = ["train", "val", "test"]
 
-# ImageNet normalization stats (used for AlexNet)
+# ImageNet normalization stats
 NORMALIZE_MEAN = [0.485, 0.456, 0.406]
 NORMALIZE_STD = [0.229, 0.224, 0.225]
 
-# Class names and label mapping
-# When NUM_CLASSES=2: binary (non_landslide=0, all landslides=1)
-# When NUM_CLASSES=6: multi-class (each subtype gets its own label)
-if NUM_CLASSES == 2:
-    CLASS_NAMES = ["non_landslide", "landslide"]
-    LABEL_MAP = {
-        "non_landslide": 0,
-        "rockfall": 1,
-        "mudflow": 1,
-        "debris_flow": 1,
-        "rotational_slide": 1,
-        "translational_slide": 1,
-    }
-else:
-    CLASS_NAMES = ["non_landslide", "rockfall", "mudflow", "debris_flow", "rotational_slide", "translational_slide"]
-    LABEL_MAP = {
-        "non_landslide": 0,
-        "rockfall": 1,
-        "mudflow": 2,
-        "debris_flow": 3,
-        "rotational_slide": 4,
-        "translational_slide": 5,
-    }
+# 6-class configuration
+CLASS_NAMES = [
+    "non_landslide", "rockfall", "mudflow",
+    "debris_flow", "rotational_slide", "translational_slide",
+]
+LABEL_MAP = {
+    "non_landslide": 0,
+    "rockfall": 1,
+    "mudflow": 2,
+    "debris_flow": 3,
+    "rotational_slide": 4,
+    "translational_slide": 5,
+}
 
-# ─── Phase 2: HMM ─────────────────────────────────────────────────────────────
-HMM_N_COMPONENTS = 8      # hidden states: increased to 8 for finer regime modeling
+# Ensemble weights — ConvNeXt-CBAM-FPN + SwinV2-Small
+ENSEMBLE_WEIGHT_CONVNEXT = 0.55    # ConvNeXt gets slightly more weight (stronger backbone)
+ENSEMBLE_WEIGHT_SWINV2 = 0.45     # SwinV2 complements with attention-based features
+
+# Pipeline threshold: minimum confidence to trigger Phase 2
+PHASE1_THRESHOLD = 0.50            # Will be re-calibrated after training
+
+# ─── Phase 2: Bi-LSTM + Multi-Head Attention ─────────────────────────────────
+# Replaces classical HMM with deep learning temporal model.
+# Reference: "Attention-Based RNNs for Landslide Temporal Prediction" (2024)
+LSTM_HIDDEN_DIM = 128              # LSTM hidden state dimension (256 bidirectional)
+LSTM_NUM_LAYERS = 2                # Stacked Bi-LSTM layers
+LSTM_NUM_HEADS = 4                 # Multi-head attention heads
+LSTM_DROPOUT = 0.3                 # Dropout in LSTM + attention
+LSTM_NUM_EPOCHS = 100              # Max training epochs (early stopping applies)
+LSTM_LEARNING_RATE = 1e-3          # AdamW learning rate
+LSTM_FORECAST_STEPS = 3            # Number of future steps to forecast
+LSTM_EARLY_STOPPING_PATIENCE = 15  # Stop if no improvement for 15 epochs
+
+# Checkpoint paths — LSTM model
+LSTM_MODEL_PATH = os.path.join(CHECKPOINTS_DIR, "bilstm_attention_best.pth")
+LSTM_TYPE_ENCODER_PATH = os.path.join(CHECKPOINTS_DIR, "lstm_type_encoder.pkl")
+LSTM_TRIGGER_ENCODER_PATH = os.path.join(CHECKPOINTS_DIR, "lstm_trigger_encoder.pkl")
+
+# Active Phase 2 model: "lstm" (new) or "hmm" (legacy)
+ACTIVE_PHASE2 = "lstm"
+
+# ─── Phase 2 Legacy: HMM (kept for comparison) ───────────────────────────────
+HMM_N_COMPONENTS = 8
 HMM_N_ITER = 100
 HMM_MODEL_PATH = os.path.join(CHECKPOINTS_DIR, "hmm_model.pkl")
 HMM_ENCODER_PATH = os.path.join(CHECKPOINTS_DIR, "hmm_encoder.pkl")
 HMM_TRIGGER_ENCODER_PATH = os.path.join(CHECKPOINTS_DIR, "hmm_trigger_encoder.pkl")
-HMM_USE_COMBINED_OBS = True   # combine type+trigger into single symbol for richer HMM
+HMM_USE_COMBINED_OBS = True
 
-# Human-readable labels for HMM hidden states (assigned after training inspection)
 HMM_STATE_LABELS = {
     0: "Shallow Rain Slide",
     1: "Deep Seismic Slide",
@@ -86,13 +134,6 @@ HMM_STATE_LABELS = {
 
 # ─── General ──────────────────────────────────────────────────────────────────
 RANDOM_SEED = 42
-
-# Pipeline threshold: minimum confidence to trigger Phase 2
-# Optimal F1 threshold found by precision-recall curve analysis on test set
-PHASE1_THRESHOLD = 0.467   # optimal F1 threshold for ensemble (EfficientNet-B3 + AlexNet)
-# Ensemble weights: EfficientNet-B3 + AlexNet pretrained
-ENSEMBLE_WEIGHT_EFFNET = 0.6   # 60% EfficientNet-B3
-ENSEMBLE_WEIGHT_ALEXNET = 0.4  # 40% AlexNet pretrained
 
 # Create output directories at import time
 for _dir in [CHECKPOINTS_DIR, PLOTS_DIR]:

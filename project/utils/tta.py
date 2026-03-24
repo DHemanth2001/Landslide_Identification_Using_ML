@@ -1,9 +1,9 @@
 """
 Test-Time Augmentation (TTA) for landslide classification.
 
-At inference time, the same image is transformed multiple ways (flips, crops),
+At inference time, the same image is transformed multiple ways (flips, rotations),
 each variant is passed through the model, and probabilities are averaged.
-This produces more robust predictions at the cost of N× inference time.
+This produces more robust predictions at the cost of N x inference time.
 """
 
 import torch
@@ -21,6 +21,8 @@ def get_tta_transforms(img_size):
       2. Vertical flip
       3. Horizontal + Vertical flip
       4. 90-degree rotation
+      5. 180-degree rotation
+      6. 270-degree rotation
 
     Args:
         img_size: Tuple (H, W) for resizing.
@@ -28,9 +30,6 @@ def get_tta_transforms(img_size):
     Returns:
         List of torchvision.transforms.Compose objects.
     """
-    from torchvision.transforms.functional import hflip, vflip, rotate
-    import numpy as np
-
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406],
         std=[0.229, 0.224, 0.225],
@@ -76,7 +75,23 @@ def get_tta_transforms(img_size):
         normalize,
     ])
 
-    return [base, hflip_t, vflip_t, hvflip_t, rot90_t]
+    rot180_t = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize(img_size),
+        transforms.RandomRotation(degrees=(180, 180)),
+        transforms.ToTensor(),
+        normalize,
+    ])
+
+    rot270_t = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize(img_size),
+        transforms.RandomRotation(degrees=(270, 270)),
+        transforms.ToTensor(),
+        normalize,
+    ])
+
+    return [base, hflip_t, vflip_t, hvflip_t, rot90_t, rot180_t, rot270_t]
 
 
 def predict_with_tta(model, image_rgb, img_size, device, n_augments=5):
@@ -88,7 +103,7 @@ def predict_with_tta(model, image_rgb, img_size, device, n_augments=5):
         image_rgb:  Numpy array (H, W, 3) in RGB, uint8.
         img_size:   Tuple (H, W) for the model's expected input size.
         device:     torch.device.
-        n_augments: Number of TTA views to use (1-5). Default 5.
+        n_augments: Number of TTA views to use (1-7). Default 5.
 
     Returns:
         Averaged probability array of shape (num_classes,).
@@ -109,25 +124,25 @@ def predict_with_tta(model, image_rgb, img_size, device, n_augments=5):
 
 def predict_ensemble_with_tta(
     effnet_scaler, vit_model, image_rgb, device,
-    effnet_img_size=(300, 300), vit_img_size=(224, 224),
-    effnet_weight=0.6, vit_weight=0.4, n_augments=5,
+    effnet_img_size=(224, 224), vit_img_size=(256, 256),
+    effnet_weight=0.55, vit_weight=0.45, n_augments=5,
 ):
     """
     Run TTA on both ensemble models and return weighted-averaged probabilities.
 
     Args:
-        effnet_scaler: Temperature-calibrated EfficientNet model.
-        vit_model:     ViT-B/16 model.
+        effnet_scaler: Temperature-calibrated ConvNeXt-CBAM-FPN model.
+        vit_model:     SwinV2-Small model.
         image_rgb:     Numpy array (H, W, 3) in RGB, uint8.
         device:        torch.device.
-        effnet_img_size: Input size for EfficientNet.
-        vit_img_size:  Input size for ViT.
-        effnet_weight: Ensemble weight for EfficientNet.
-        vit_weight:    Ensemble weight for ViT.
-        n_augments:    Number of TTA views (1-5).
+        effnet_img_size: Input size for ConvNeXt.
+        vit_img_size:  Input size for SwinV2.
+        effnet_weight: Ensemble weight for ConvNeXt.
+        vit_weight:    Ensemble weight for SwinV2.
+        n_augments:    Number of TTA views (1-7).
 
     Returns:
-        Tuple of (ensemble_probs, effnet_probs, vit_probs) — each numpy (C,).
+        Tuple of (ensemble_probs, convnext_probs, swinv2_probs) — each numpy (C,).
     """
     effnet_probs = predict_with_tta(effnet_scaler, image_rgb, effnet_img_size, device, n_augments)
     vit_probs = predict_with_tta(vit_model, image_rgb, vit_img_size, device, n_augments)

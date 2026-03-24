@@ -1,8 +1,9 @@
 """
-Evaluation functions for landslide classifier (multi-class).
+Evaluation functions for landslide classifier (6-class).
 Produces accuracy, per-class precision/recall/F1, confusion matrix, and ROC curves.
-Supports 6-class output: non_landslide, rockfall, mudflow, debris_flow,
-                          rotational_slide, translational_slide.
+
+Supports the new MSAFusionNet (ConvNeXt-CBAM-FPN) and SwinV2-Small models,
+as well as legacy models (AlexNet, EfficientNet-B3, ViT-B/16).
 """
 
 import os
@@ -17,12 +18,61 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from phase1_alexnet.dataset import LandslideDataset, get_dataloaders, get_test_transforms
 from torch.utils.data import DataLoader
-from phase1_alexnet.model import get_model, get_efficientnet_b3, get_vit_b_16
+from phase1_alexnet.model import (
+    get_convnext_cbam_fpn,
+    get_swinv2_s,
+    get_model,
+    get_efficientnet_b3,
+    get_vit_b_16,
+)
 from phase1_alexnet.train import load_checkpoint
 from utils.metrics import compute_metrics, print_metrics
 from utils.plot_utils import plot_confusion_matrix, plot_roc_curve, plot_training_history
 from utils.temperature_scaling import fit_temperature, save_temperature
 from utils.tta import get_tta_transforms
+
+
+def _create_model(model_name: str, num_classes: int):
+    """Create a model by name (no checkpoint loading)."""
+    if model_name == "convnext_cbam_fpn":
+        return get_convnext_cbam_fpn(num_classes=num_classes, freeze=False)
+    elif model_name == "swinv2_s":
+        return get_swinv2_s(num_classes=num_classes, freeze=False)
+    elif model_name == "efficientnet_b3":
+        return get_efficientnet_b3(num_classes=num_classes)
+    elif model_name == "vit_b_16":
+        return get_vit_b_16(num_classes=num_classes)
+    else:
+        return get_model(pretrained=False, num_classes=num_classes)
+
+
+def _get_checkpoint_path(model_name: str, use_ema: bool = True):
+    """Get checkpoint path for a model, preferring EMA checkpoints."""
+    if model_name == "convnext_cbam_fpn":
+        ema_path = config.EMA_CONVNEXT_CHECKPOINT
+        raw_path = config.CONVNEXT_CHECKPOINT
+    elif model_name == "swinv2_s":
+        ema_path = config.EMA_SWINV2_CHECKPOINT
+        raw_path = config.SWINV2_CHECKPOINT
+    elif model_name == "efficientnet_b3":
+        return config.EFFICIENTNET_CHECKPOINT
+    elif model_name == "vit_b_16":
+        return config.VIT_CHECKPOINT
+    else:
+        return config.ALEXNET_CHECKPOINT
+
+    # Prefer EMA checkpoint if it exists
+    if use_ema and os.path.exists(ema_path):
+        print(f"Using EMA checkpoint: {ema_path}")
+        return ema_path
+    return raw_path
+
+
+def _get_img_size(model_name: str):
+    """Get image size for a model."""
+    if model_name == "swinv2_s":
+        return config.SWINV2_IMG_SIZE
+    return config.CONVNEXT_IMG_SIZE
 
 
 def evaluate_model(model, test_loader, device: torch.device) -> dict:
@@ -51,7 +101,7 @@ def evaluate_model(model, test_loader, device: torch.device) -> dict:
 
     all_preds = np.array(all_preds)
     all_labels = np.array(all_labels)
-    all_probs = np.array(all_probs)  # shape (N, num_classes)
+    all_probs = np.array(all_probs)
 
     results = compute_metrics(all_labels, all_preds, all_probs, num_classes=config.NUM_CLASSES)
     results["all_preds"] = all_preds
@@ -65,20 +115,10 @@ def evaluate_model_with_tta(model, test_dataset, device: torch.device,
     """
     Run TTA inference on the test set: for each image, apply N augmentations
     and average the softmax probabilities before taking argmax.
-
-    Args:
-        model:        PyTorch model in eval mode.
-        test_dataset: LandslideDataset (raw images needed for TTA transforms).
-        device:       torch.device.
-        img_size:     (H, W) tuple for transforms.
-        n_augments:   Number of TTA views (1-5).
-
-    Returns:
-        dict with standard metric keys + all_preds, all_labels, all_probs.
     """
     import cv2
     if img_size is None:
-        img_size = config.VIT_IMG_SIZE if config.ACTIVE_MODEL == "vit_b_16" else config.IMG_SIZE
+        img_size = _get_img_size(config.ACTIVE_MODEL)
 
     tta_transforms = get_tta_transforms(img_size)[:n_augments]
     model.eval()
@@ -138,93 +178,97 @@ def print_classification_report(results: dict) -> None:
 
 
 def run_evaluation(
+    model_name: str = None,
     checkpoint_path: str = None,
     processed_dir: str = None,
     plots_dir: str = None,
+    use_ema: bool = True,
 ) -> dict:
     """
-    Load the best checkpoint and evaluate on the test set (multi-class).
+    Load the best checkpoint and evaluate on the test set (6-class).
 
     Args:
+        model_name:      Model architecture name.
         checkpoint_path: Path to .pth checkpoint file.
         processed_dir:   Path to data/processed/.
         plots_dir:       Directory to save evaluation plots.
+        use_ema:         Prefer EMA checkpoint if available.
 
     Returns:
         Evaluation results dict.
     """
+    if model_name is None:
+        model_name = config.ACTIVE_MODEL
     if checkpoint_path is None:
-        if config.ACTIVE_MODEL == "efficientnet_b3":
-            checkpoint_path = config.EFFICIENTNET_CHECKPOINT
-        elif config.ACTIVE_MODEL == "vit_b_16":
-            checkpoint_path = config.VIT_CHECKPOINT
-        else:
-            checkpoint_path = config.ALEXNET_CHECKPOINT
+        checkpoint_path = _get_checkpoint_path(model_name, use_ema=use_ema)
     if processed_dir is None:
         processed_dir = config.PROCESSED_DATA_DIR
     if plots_dir is None:
         plots_dir = config.PLOTS_DIR
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    img_size = _get_img_size(model_name)
 
-    # Load model matching the active architecture
-    model_fns = [
-        lambda: get_vit_b_16(num_classes=config.NUM_CLASSES),
-        lambda: get_efficientnet_b3(num_classes=config.NUM_CLASSES),
-        lambda: get_model(pretrained=True, num_classes=config.NUM_CLASSES),
-        lambda: get_model(pretrained=False, num_classes=config.NUM_CLASSES),
-    ]
-    for model_fn in model_fns:
-        try:
-            model = model_fn()
-            model = model.to(device)
-            load_checkpoint(checkpoint_path, model)
-            break
-        except RuntimeError:
-            continue
+    # Load model
+    model = _create_model(model_name, num_classes=config.NUM_CLASSES)
+    model = model.to(device)
+    load_checkpoint(checkpoint_path, model)
 
     # Fit temperature scaling on val set
-    val_dataset = LandslideDataset(processed_dir, "val", get_test_transforms())
-    val_loader = DataLoader(val_dataset, batch_size=config.BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
+    val_dataset = LandslideDataset(processed_dir, "val", get_test_transforms(img_size))
+    val_loader = DataLoader(val_dataset, batch_size=config.BATCH_SIZE, shuffle=False,
+                           num_workers=4, pin_memory=True)
     scaler = fit_temperature(model, val_loader, device)
     save_temperature(scaler.temperature.item())
 
     # Use dedicated test split for final evaluation
-    test_dataset = LandslideDataset(processed_dir, "test", get_test_transforms())
-    test_loader = DataLoader(test_dataset, batch_size=config.BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True)
+    test_dataset = LandslideDataset(processed_dir, "test", get_test_transforms(img_size))
+    test_loader = DataLoader(test_dataset, batch_size=config.BATCH_SIZE, shuffle=False,
+                            num_workers=4, pin_memory=True)
 
-    print("\n--- Raw (uncalibrated) model ---")
+    print(f"\n--- Raw (uncalibrated) {model_name} ---")
     results = evaluate_model(model, test_loader, device)
     print_classification_report(results)
 
-    print("\n--- Temperature-calibrated model ---")
+    print(f"\n--- Temperature-calibrated {model_name} ---")
     results_cal = evaluate_model(scaler, test_loader, device)
     print_classification_report(results_cal)
     results["calibrated"] = results_cal
 
-    # TTA evaluation (5 augmented views)
-    print("\n--- TTA evaluation (5 augmented views) ---")
-    results_tta = evaluate_model_with_tta(scaler, test_dataset, device, n_augments=5)
+    # TTA evaluation
+    print(f"\n--- TTA evaluation (5 augmented views) ---")
+    results_tta = evaluate_model_with_tta(scaler, test_dataset, device,
+                                          img_size=img_size, n_augments=5)
     print_classification_report(results_tta)
     results["tta"] = results_tta
 
-    # Save plots — multi-class confusion matrix (TTA version)
+    # Save plots
+    suffix = f"_{model_name}"
     plot_confusion_matrix(
         results_tta["confusion_matrix"],
         config.CLASS_NAMES,
-        title="Multi-Class Confusion Matrix (with TTA)",
-        save_path=os.path.join(plots_dir, "confusion_matrix.png"),
+        title=f"6-Class Confusion Matrix — {model_name} (TTA)",
+        save_path=os.path.join(plots_dir, f"confusion_matrix{suffix}.png"),
     )
-    # Multi-class ROC (one-vs-rest, TTA version)
     plot_roc_curve(
         results_tta["all_probs"],
         results_tta["all_labels"],
         class_names=config.CLASS_NAMES,
-        save_path=os.path.join(plots_dir, "roc_curve.png"),
+        save_path=os.path.join(plots_dir, f"roc_curve{suffix}.png"),
     )
 
     return results
 
 
 if __name__ == "__main__":
-    run_evaluation()
+    # Evaluate primary model
+    print("=" * 60)
+    print("Evaluating MSAFusionNet (ConvNeXt-CBAM-FPN)")
+    print("=" * 60)
+    run_evaluation(model_name="convnext_cbam_fpn")
+
+    # Evaluate ensemble partner
+    print("\n" + "=" * 60)
+    print("Evaluating SwinV2-Small")
+    print("=" * 60)
+    run_evaluation(model_name="swinv2_s")

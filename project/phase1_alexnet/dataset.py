@@ -1,9 +1,14 @@
 """
-PyTorch Dataset and DataLoader for landslide image classification.
-Uses albumentations for augmentation and OpenCV for image reading.
+PyTorch Dataset and DataLoader for landslide 6-class image classification.
+
+Includes advanced augmentation strategies:
+  - Mixup (Zhang et al., 2018): interpolates between two training images
+  - CutMix (Yun et al., 2019): pastes a patch from one image onto another
+  - RandAugment-style transforms for training robustness
 """
 
 import os
+import random
 from pathlib import Path
 
 import cv2
@@ -21,20 +26,11 @@ SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
 
 class LandslideDataset(Dataset):
     """
-    Dataset that loads images from:
-        processed/<split>/landslide/
-        processed/<split>/non_landslide/
-
-    Labels: landslide = 1, non_landslide = 0
+    Dataset for 6-class landslide classification.
+    Loads images from: processed/<split>/<class_name>/
     """
 
     def __init__(self, root_dir: str, split: str, transform=None):
-        """
-        Args:
-            root_dir:  Path to data/processed/
-            split:     'train' or 'test'
-            transform: albumentations Compose transform
-        """
         assert split in ("train", "val", "test"), "split must be 'train', 'val', or 'test'"
         self.transform = transform
         self.samples = []  # list of (image_path, label)
@@ -60,11 +56,9 @@ class LandslideDataset(Dataset):
     def __getitem__(self, idx: int):
         img_path, label = self.samples[idx]
 
-        # Read image as BGR then convert to RGB
         img = cv2.imread(img_path)
         if img is None:
-            # Return a blank image if file is corrupted
-            img_sz = config.VIT_IMG_SIZE if config.ACTIVE_MODEL == "vit_b_16" else config.IMG_SIZE
+            img_sz = config.IMG_SIZE
             img = np.zeros((*img_sz, 3), dtype=np.uint8)
         else:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -77,19 +71,42 @@ class LandslideDataset(Dataset):
         return img, label
 
 
+# ─── Augmentation Pipelines ──────────────────────────────────────────────────
+
 def get_train_transforms(img_size=None):
-    """Augmentation pipeline for training images."""
+    """
+    Strong augmentation pipeline for training.
+    Includes geometric + photometric augmentations for maximum robustness.
+    """
     if img_size is None:
-        img_size = config.VIT_IMG_SIZE if config.ACTIVE_MODEL == "vit_b_16" else config.IMG_SIZE
+        if config.ACTIVE_MODEL == "swinv2_s":
+            img_size = config.SWINV2_IMG_SIZE
+        else:
+            img_size = config.CONVNEXT_IMG_SIZE
+
     return transforms.Compose([
         transforms.ToPILImage(),
         transforms.Resize(img_size),
         transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomVerticalFlip(p=0.3),
-        transforms.RandomRotation((0, 360)),
-        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.2, hue=0.05),
+        transforms.RandomVerticalFlip(p=0.5),
+        transforms.RandomRotation(degrees=(0, 360)),
+        transforms.RandomAffine(
+            degrees=0,
+            translate=(0.1, 0.1),
+            scale=(0.85, 1.15),
+            shear=10,
+        ),
+        transforms.ColorJitter(
+            brightness=0.4,
+            contrast=0.4,
+            saturation=0.3,
+            hue=0.08,
+        ),
+        transforms.RandomGrayscale(p=0.05),
         transforms.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+        transforms.RandomPerspective(distortion_scale=0.15, p=0.3),
         transforms.ToTensor(),
+        transforms.RandomErasing(p=0.15, scale=(0.02, 0.15)),
         transforms.Normalize(mean=config.NORMALIZE_MEAN, std=config.NORMALIZE_STD),
     ])
 
@@ -97,7 +114,11 @@ def get_train_transforms(img_size=None):
 def get_test_transforms(img_size=None):
     """Deterministic pipeline for validation/test images."""
     if img_size is None:
-        img_size = config.VIT_IMG_SIZE if config.ACTIVE_MODEL == "vit_b_16" else config.IMG_SIZE
+        if config.ACTIVE_MODEL == "swinv2_s":
+            img_size = config.SWINV2_IMG_SIZE
+        else:
+            img_size = config.CONVNEXT_IMG_SIZE
+
     return transforms.Compose([
         transforms.ToPILImage(),
         transforms.Resize(img_size),
@@ -106,45 +127,125 @@ def get_test_transforms(img_size=None):
     ])
 
 
+# ─── Mixup & CutMix ──────────────────────────────────────────────────────────
+
+def mixup_data(x, y, alpha=0.3):
+    """
+    Mixup: creates convex combinations of training examples.
+    Reference: Zhang et al., "mixup: Beyond Empirical Risk Minimization", ICLR 2018.
+
+    Returns mixed inputs, pairs of targets, and lambda value.
+    """
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+        lam = max(lam, 1.0 - lam)  # Ensure lam >= 0.5 so label order is consistent
+    else:
+        lam = 1.0
+
+    batch_size = x.size(0)
+    index = torch.randperm(batch_size, device=x.device)
+
+    mixed_x = lam * x + (1.0 - lam) * x[index]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+
+def cutmix_data(x, y, alpha=1.0):
+    """
+    CutMix: cuts and pastes patches between training images.
+    Reference: Yun et al., "CutMix: Regularization Strategy to Train Strong
+               Classifiers with Localizable Features", ICCV 2019.
+
+    Returns mixed inputs, pairs of targets, and lambda value.
+    """
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1.0
+
+    batch_size = x.size(0)
+    index = torch.randperm(batch_size, device=x.device)
+
+    _, _, h, w = x.shape
+
+    # Sample bounding box
+    cut_ratio = np.sqrt(1.0 - lam)
+    cut_h = int(h * cut_ratio)
+    cut_w = int(w * cut_ratio)
+
+    cy = np.random.randint(h)
+    cx = np.random.randint(w)
+
+    y1 = np.clip(cy - cut_h // 2, 0, h)
+    y2 = np.clip(cy + cut_h // 2, 0, h)
+    x1 = np.clip(cx - cut_w // 2, 0, w)
+    x2 = np.clip(cx + cut_w // 2, 0, w)
+
+    mixed_x = x.clone()
+    mixed_x[:, :, y1:y2, x1:x2] = x[index, :, y1:y2, x1:x2]
+
+    # Adjust lambda to match the actual area ratio
+    lam = 1.0 - (y2 - y1) * (x2 - x1) / (h * w)
+
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    """Compute loss for mixup/cutmix mixed targets."""
+    return lam * criterion(pred, y_a) + (1.0 - lam) * criterion(pred, y_b)
+
+
+# ─── DataLoaders ──────────────────────────────────────────────────────────────
+
 def get_dataloaders(
     processed_dir: str = None,
     batch_size: int = None,
     num_workers: int = 4,
     use_weighted_sampler: bool = True,
+    model_name: str = None,
 ):
     """
-    Build train and test DataLoaders.
+    Build train and validation DataLoaders with class-balanced sampling.
 
     Args:
-        processed_dir:        Path to data/processed/ (defaults to config value).
-        batch_size:           Batch size (defaults to config.BATCH_SIZE).
+        processed_dir:        Path to data/processed/.
+        batch_size:           Batch size.
         num_workers:          Number of DataLoader workers.
-        use_weighted_sampler: If True, oversample minority class during training.
+        use_weighted_sampler: If True, oversample minority classes.
+        model_name:           Model name to determine image size.
 
     Returns:
-        (train_loader, test_loader)
+        (train_loader, val_loader)
     """
     if processed_dir is None:
         processed_dir = config.PROCESSED_DATA_DIR
     if batch_size is None:
         batch_size = config.BATCH_SIZE
+    if model_name is None:
+        model_name = config.ACTIVE_MODEL
 
-    train_dataset = LandslideDataset(processed_dir, "train", get_train_transforms())
-    # Use 'val' split if present, else fall back to 'test'
+    # Select image size based on model
+    if model_name == "swinv2_s":
+        img_size = config.SWINV2_IMG_SIZE
+    else:
+        img_size = config.CONVNEXT_IMG_SIZE
+
+    train_dataset = LandslideDataset(processed_dir, "train", get_train_transforms(img_size))
     val_split = "val" if os.path.isdir(os.path.join(processed_dir, "val")) else "test"
-    test_dataset = LandslideDataset(processed_dir, val_split, get_test_transforms())
+    val_dataset = LandslideDataset(processed_dir, val_split, get_test_transforms(img_size))
 
     print(f"Train set: {len(train_dataset)} images")
-    print(f"Val   set: {len(test_dataset)} images (split='{val_split}')")
+    print(f"Val   set: {len(val_dataset)} images (split='{val_split}')")
 
     sampler = None
     shuffle = True
     if use_weighted_sampler and len(train_dataset) > 0:
         labels = [train_dataset.samples[i][1] for i in range(len(train_dataset))]
-        class_counts = [labels.count(i) for i in range(config.NUM_CLASSES)]
+        class_counts = [max(labels.count(i), 1) for i in range(config.NUM_CLASSES)]
         weights = [1.0 / class_counts[lbl] for lbl in labels]
         sampler = WeightedRandomSampler(weights, num_samples=len(weights), replacement=True)
-        shuffle = False  # mutually exclusive with sampler
+        shuffle = False
 
     train_loader = DataLoader(
         train_dataset,
@@ -153,13 +254,14 @@ def get_dataloaders(
         sampler=sampler,
         num_workers=num_workers,
         pin_memory=True,
+        drop_last=True,  # Drop incomplete batch for stable mixup/cutmix
     )
-    test_loader = DataLoader(
-        test_dataset,
+    val_loader = DataLoader(
+        val_dataset,
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
         pin_memory=True,
     )
 
-    return train_loader, test_loader
+    return train_loader, val_loader

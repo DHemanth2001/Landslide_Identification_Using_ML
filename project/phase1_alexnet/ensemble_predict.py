@@ -1,8 +1,10 @@
 """
-Ensemble predictor: weighted average of EfficientNet-B3 + ViT-B/16 (multi-class).
-Weights: 60% EfficientNet-B3 (calibrated) + 40% ViT-B/16.
+Ensemble predictor: weighted average of ConvNeXt-CBAM-FPN + SwinV2-Small (6-class).
+Weights: 55% ConvNeXt-CBAM-FPN (calibrated) + 45% SwinV2-Small.
+
 6-class output: non_landslide, rockfall, mudflow, debris_flow,
                 rotational_slide, translational_slide.
+
 Supports Test-Time Augmentation (TTA) for more robust predictions.
 """
 
@@ -16,7 +18,7 @@ import torch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 from phase1_alexnet.dataset import get_test_transforms
-from phase1_alexnet.model import get_efficientnet_b3, get_vit_b_16
+from phase1_alexnet.model import get_convnext_cbam_fpn, get_swinv2_s
 from phase1_alexnet.train import load_checkpoint
 from utils.temperature_scaling import TemperatureScaler, load_temperature
 from utils.tta import predict_ensemble_with_tta
@@ -24,42 +26,53 @@ from utils.tta import predict_ensemble_with_tta
 
 def load_ensemble(device: torch.device = None):
     """
-    Load both models and return them as a tuple (effnet_scaler, vit_model, device).
-    EfficientNet-B3 is wrapped in TemperatureScaler.
+    Load both models and return them as a tuple.
+    ConvNeXt-CBAM-FPN is wrapped in TemperatureScaler.
+
+    Returns:
+        (convnext_scaler, swinv2_model, device)
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # EfficientNet-B3 + temperature calibration
-    effnet = get_efficientnet_b3(num_classes=config.NUM_CLASSES).to(device)
+    # ConvNeXt-CBAM-FPN + temperature calibration (prefer EMA checkpoint)
+    convnext = get_convnext_cbam_fpn(num_classes=config.NUM_CLASSES, freeze=False).to(device)
+    ckpt_path = config.EMA_CONVNEXT_CHECKPOINT
+    if not os.path.exists(ckpt_path):
+        ckpt_path = config.CONVNEXT_CHECKPOINT
     try:
-        load_checkpoint(config.EFFICIENTNET_CHECKPOINT, effnet)
+        load_checkpoint(ckpt_path, convnext)
     except FileNotFoundError:
-        print("Warning: EfficientNet checkpoint not found.")
+        print("Warning: ConvNeXt-CBAM-FPN checkpoint not found.")
+
     T = load_temperature()
-    scaler = TemperatureScaler(effnet)
+    scaler = TemperatureScaler(convnext)
     scaler.temperature = torch.nn.Parameter(torch.tensor([T]))
     scaler = scaler.to(device)
     scaler.eval()
 
-    # ViT-B/16
-    vit_model = get_vit_b_16(num_classes=config.NUM_CLASSES).to(device)
+    # SwinV2-Small (prefer EMA checkpoint)
+    swinv2 = get_swinv2_s(num_classes=config.NUM_CLASSES, freeze=False).to(device)
+    ckpt_path = config.EMA_SWINV2_CHECKPOINT
+    if not os.path.exists(ckpt_path):
+        ckpt_path = config.SWINV2_CHECKPOINT
     try:
-        load_checkpoint(config.VIT_CHECKPOINT, vit_model)
+        load_checkpoint(ckpt_path, swinv2)
     except FileNotFoundError:
-        print("Warning: ViT-B/16 checkpoint not found.")
-    vit_model.eval()
+        print("Warning: SwinV2-Small checkpoint not found.")
+    swinv2.eval()
 
-    print(f"Ensemble loaded: EfficientNet-B3 (T={T:.4f}, w={config.ENSEMBLE_WEIGHT_EFFNET}) "
-          f"+ ViT-B/16 (w={config.ENSEMBLE_WEIGHT_ALEXNET})")
-    return scaler, vit_model, device
+    print(f"Ensemble loaded: ConvNeXt-CBAM-FPN (T={T:.4f}, w={config.ENSEMBLE_WEIGHT_CONVNEXT}) "
+          f"+ SwinV2-Small (w={config.ENSEMBLE_WEIGHT_SWINV2})")
+    return scaler, swinv2, device
 
 
-def predict_ensemble(image_path: str, effnet_scaler, vit_model, device: torch.device,
+def predict_ensemble(image_path: str, convnext_scaler, swinv2_model,
+                     device: torch.device,
                      use_tta: bool = True, n_augments: int = 5) -> dict:
     """
-    Run multi-class ensemble prediction on a single image.
-    Optionally uses Test-Time Augmentation (TTA) for more robust predictions.
+    Run 6-class ensemble prediction on a single image.
+    Optionally uses Test-Time Augmentation (TTA).
 
     Returns dict with:
       label (specific type), confidence, probabilities (all 6 classes),
@@ -71,40 +84,35 @@ def predict_ensemble(image_path: str, effnet_scaler, vit_model, device: torch.de
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     if use_tta:
-        # TTA: average predictions over multiple augmented views
-        ensemble_probs, probs_effnet, probs_vit = predict_ensemble_with_tta(
-            effnet_scaler, vit_model, img, device,
-            effnet_img_size=config.IMG_SIZE, vit_img_size=config.VIT_IMG_SIZE,
-            effnet_weight=config.ENSEMBLE_WEIGHT_EFFNET,
-            vit_weight=config.ENSEMBLE_WEIGHT_ALEXNET,
+        ensemble_probs, probs_convnext, probs_swinv2 = predict_ensemble_with_tta(
+            convnext_scaler, swinv2_model, img, device,
+            effnet_img_size=config.CONVNEXT_IMG_SIZE,
+            vit_img_size=config.SWINV2_IMG_SIZE,
+            effnet_weight=config.ENSEMBLE_WEIGHT_CONVNEXT,
+            vit_weight=config.ENSEMBLE_WEIGHT_SWINV2,
             n_augments=n_augments,
         )
     else:
-        # Standard single-pass prediction
-        transform_effnet = get_test_transforms(config.IMG_SIZE)
-        tensor_effnet = transform_effnet(img).unsqueeze(0).to(device)
+        transform_convnext = get_test_transforms(config.CONVNEXT_IMG_SIZE)
+        tensor_convnext = transform_convnext(img).unsqueeze(0).to(device)
 
-        transform_vit = get_test_transforms(config.VIT_IMG_SIZE)
-        tensor_vit = transform_vit(img).unsqueeze(0).to(device)
+        transform_swinv2 = get_test_transforms(config.SWINV2_IMG_SIZE)
+        tensor_swinv2 = transform_swinv2(img).unsqueeze(0).to(device)
 
         with torch.no_grad():
-            probs_effnet = torch.softmax(effnet_scaler(tensor_effnet), dim=1)[0].cpu().numpy()
-            probs_vit    = torch.softmax(vit_model(tensor_vit),        dim=1)[0].cpu().numpy()
+            probs_convnext = torch.softmax(convnext_scaler(tensor_convnext), dim=1)[0].cpu().numpy()
+            probs_swinv2 = torch.softmax(swinv2_model(tensor_swinv2), dim=1)[0].cpu().numpy()
 
-        # Weighted ensemble over all classes
-        ensemble_probs = (config.ENSEMBLE_WEIGHT_EFFNET * probs_effnet +
-                          config.ENSEMBLE_WEIGHT_ALEXNET * probs_vit)
+        ensemble_probs = (config.ENSEMBLE_WEIGHT_CONVNEXT * probs_convnext +
+                          config.ENSEMBLE_WEIGHT_SWINV2 * probs_swinv2)
 
-    # Multi-class: pick the highest-probability class
     label_idx = int(np.argmax(ensemble_probs))
     label = config.CLASS_NAMES[label_idx]
     confidence = float(ensemble_probs[label_idx])
     is_landslide = label != "non_landslide"
 
-    # Aggregate landslide probability (sum of all landslide sub-types)
     landslide_prob = float(sum(ensemble_probs[i] for i in range(1, config.NUM_CLASSES)))
 
-    # Per-class probabilities
     probabilities = {
         config.CLASS_NAMES[i]: float(ensemble_probs[i])
         for i in range(config.NUM_CLASSES)
@@ -117,8 +125,10 @@ def predict_ensemble(image_path: str, effnet_scaler, vit_model, device: torch.de
         "is_landslide": is_landslide,
         "landslide_prob": landslide_prob,
         "landslide_type": label if is_landslide else None,
-        "effnet_probs": {config.CLASS_NAMES[i]: float(probs_effnet[i]) for i in range(config.NUM_CLASSES)},
-        "vit_probs": {config.CLASS_NAMES[i]: float(probs_vit[i]) for i in range(config.NUM_CLASSES)},
+        "convnext_probs": {config.CLASS_NAMES[i]: float(probs_convnext[i])
+                           for i in range(config.NUM_CLASSES)},
+        "swinv2_probs": {config.CLASS_NAMES[i]: float(probs_swinv2[i])
+                         for i in range(config.NUM_CLASSES)},
         "threshold_used": config.PHASE1_THRESHOLD,
         "tta_enabled": use_tta,
         "tta_augments": n_augments if use_tta else 0,
