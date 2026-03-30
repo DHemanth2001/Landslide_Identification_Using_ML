@@ -30,10 +30,12 @@ project/checkpoints/*.pkl
 # Dataset directories (large binary data)
 project/data/binary*/
 project/data/bijie_raw/
-project/data/bijie_landslide_dataset.zip
 project/data/cas_*/
 project/data/kaggle_*/
 project/data/processed*/
+
+# Large zip files (datasets - re-download from source)
+*.zip
 
 # Log files
 project/plots/*.log
