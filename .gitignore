@@ -18,6 +18,26 @@ project/data/test*.npy
 project/checkpoints/*.pth
 project/checkpoints/*.pkl
 
+# Images and plots (generated, too large for git)
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
+*.bmp
+*.gif
+
+# Dataset directories (large binary data)
+project/data/binary*/
+project/data/bijie_raw/
+project/data/bijie_landslide_dataset.zip
+project/data/cas_*/
+project/data/kaggle_*/
+project/data/processed*/
+
+# Log files
+project/plots/*.log
+
 # Scratch/temp files in excel folder
 project/data/excel/glc_page.html
 project/data/excel/test.json

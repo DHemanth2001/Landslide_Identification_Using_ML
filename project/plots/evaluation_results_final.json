@@ -1,0 +1,38 @@
+{
+  "EfficientNetV2-CBAM_raw": {
+    "accuracy": 0.8585675430643699,
+    "auc": null
+  },
+  "EfficientNetV2-CBAM_raw_TTA": {
+    "accuracy": 0.8495013599274706,
+    "auc": null
+  },
+  "EfficientNetV2-CBAM_ema": {
+    "accuracy": 0.8594741613780599,
+    "auc": null
+  },
+  "EfficientNetV2-CBAM_ema_TTA": {
+    "accuracy": 0.8513145965548504,
+    "auc": null
+  },
+  "ConvNeXt-CBAM-FPN_raw": {
+    "accuracy": 0.8748866727107888,
+    "auc": null
+  },
+  "ConvNeXt-CBAM-FPN_raw_TTA": {
+    "accuracy": 0.8721668177697189,
+    "auc": null
+  },
+  "ConvNeXt-CBAM-FPN_ema": {
+    "accuracy": 0.8712601994560291,
+    "auc": null
+  },
+  "ConvNeXt-CBAM-FPN_ema_TTA": {
+    "accuracy": 0.8748866727107888,
+    "auc": null
+  },
+  "ensemble_tta": {
+    "accuracy": 0.8748866727107888,
+    "auc": 0.9463306496178467
+  }
+}

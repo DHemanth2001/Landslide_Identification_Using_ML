@@ -228,6 +228,8 @@ def get_dataloaders(
     # Select image size based on model
     if model_name == "swinv2_s":
         img_size = config.SWINV2_IMG_SIZE
+    elif model_name == "efficientnetv2_cbam":
+        img_size = config.EFFNETV2_IMG_SIZE
     else:
         img_size = config.CONVNEXT_IMG_SIZE
 
@@ -255,6 +257,7 @@ def get_dataloaders(
         num_workers=num_workers,
         pin_memory=True,
         drop_last=True,  # Drop incomplete batch for stable mixup/cutmix
+        persistent_workers=True if num_workers > 0 else False,
     )
     val_loader = DataLoader(
         val_dataset,
@@ -262,6 +265,7 @@ def get_dataloaders(
         shuffle=False,
         num_workers=num_workers,
         pin_memory=True,
+        persistent_workers=True if num_workers > 0 else False,
     )
 
     return train_loader, val_loader

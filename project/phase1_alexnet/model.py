@@ -326,6 +326,81 @@ def get_swinv2_s(num_classes: int = 6, dropout: float = 0.4, freeze: bool = True
     return model
 
 
+# ─── EfficientNetV2-S + CBAM Classifier ──────────────────────────────────────
+# Designed to beat VGG16+Attention (95.8% accuracy) for landslide classification.
+# EfficientNetV2 (Tan & Le, ICML 2021) is 5x more efficient than VGG16.
+# Combined with CBAM attention + Lookahead optimizer for state-of-the-art results.
+
+class EfficientNetV2CBAM(nn.Module):
+    """
+    EfficientNetV2-S backbone with CBAM attention for landslide classification.
+
+    Architecture:
+      - EfficientNetV2-S pretrained backbone (ImageNet)
+      - CBAM attention on final feature maps
+      - Attention-weighted Global Average Pooling
+      - Classifier head with LayerNorm + dropout
+
+    Input: 384x384 (EfficientNetV2-S native resolution for best accuracy)
+    """
+
+    def __init__(self, num_classes: int = 2, dropout: float = 0.4):
+        super().__init__()
+        import torchvision.models as models
+
+        backbone = models.efficientnet_v2_s(weights=models.EfficientNet_V2_S_Weights.IMAGENET1K_V1)
+
+        # Extract feature layers (everything before classifier)
+        self.features = backbone.features  # Output: 1280 channels
+
+        # CBAM attention on final features
+        self.cbam = CBAM(1280, reduction=16, spatial_kernel=7)
+
+        # Classification head
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.LayerNorm(1280),
+            nn.Dropout(p=dropout),
+            nn.Linear(1280, 512),
+            nn.GELU(),
+            nn.Dropout(p=dropout * 0.5),
+            nn.Linear(512, num_classes),
+        )
+
+        # Initialize classifier head
+        for m in self.classifier.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.trunc_normal_(m.weight, std=0.02)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        features = self.features(x)      # (B, 1280, H/32, W/32)
+        features = self.cbam(features)    # Apply attention
+        return self.classifier(features)
+
+
+def get_efficientnetv2_cbam(num_classes: int = 2, dropout: float = 0.4, freeze: bool = True) -> nn.Module:
+    """
+    Create EfficientNetV2-S + CBAM classifier.
+    Backbone frozen by default for warm-up phase.
+    """
+    model = EfficientNetV2CBAM(num_classes=num_classes, dropout=dropout)
+
+    if freeze:
+        for param in model.features.parameters():
+            param.requires_grad = False
+        trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        total = sum(p.numel() for p in model.parameters())
+        print(f"EfficientNetV2-CBAM: {total:,} total params, {trainable:,} trainable (backbone frozen)")
+    else:
+        total = sum(p.numel() for p in model.parameters())
+        print(f"EfficientNetV2-CBAM: {total:,} total params (all trainable)")
+
+    return model
+
+
 # ─── Legacy factory functions (backward compatibility) ────────────────────────
 
 class AlexNet(nn.Module):

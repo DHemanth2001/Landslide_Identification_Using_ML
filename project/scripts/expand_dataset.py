@@ -4,10 +4,10 @@ Offline dataset expansion via aggressive augmentation.
 Expands the training set by generating multiple augmented copies of each image,
 especially for minority classes. This is critical for small datasets.
 
-Strategy:
-  - non_landslide (majority): 2x augmentation
-  - All landslide types (minority): 8x augmentation
-  - Total: ~3,400 → ~15,000-18,000 training images
+Strategy (binary_combined dataset):
+  - non_landslide (majority, 3265): 3x augmentation  → 3265 × 4 = 13,060
+  - landslide      (minority, 1284): 9x augmentation  → 1284 × 10 = 12,840
+  - Total training images: ~25,900 (balanced)
 
 This runs ONCE before training, saves augmented images to disk.
 """
@@ -24,15 +24,11 @@ from tqdm import tqdm
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 
-# Augmentation multiplier per class
-# Minority classes get more augmentation to balance the dataset
+# Augmentation multiplier per class (binary classification)
+# Minority class gets more augmentation to balance the dataset
 AUGMENT_MULTIPLIER = {
-    "non_landslide": 2,         # 1574 × 2 = 3148 augmented
-    "rockfall": 8,              # 144 × 8 = 1152 augmented
-    "mudflow": 8,               # 117 × 8 = 936 augmented
-    "debris_flow": 8,           # 113 × 8 = 904 augmented
-    "rotational_slide": 8,      # 119 × 8 = 952 augmented
-    "translational_slide": 8,   # 123 × 8 = 984 augmented
+    "non_landslide": 3,         # 4189 × (1+3) = 16,756 total
+    "landslide": 11,            # 1361 × (1+11) = 16,332 total
 }
 
 
@@ -116,9 +112,9 @@ def expand_dataset(
         split:       Which split to expand ('train' only).
     """
     if source_dir is None:
-        source_dir = config.PROCESSED_DATA_DIR
+        source_dir = os.path.join(config.DATA_DIR, "binary_combined")
     if output_dir is None:
-        output_dir = os.path.join(config.DATA_DIR, "processed_expanded")
+        output_dir = os.path.join(config.DATA_DIR, "binary_combined_expanded")
 
     print(f"Source: {source_dir}")
     print(f"Output: {output_dir}")

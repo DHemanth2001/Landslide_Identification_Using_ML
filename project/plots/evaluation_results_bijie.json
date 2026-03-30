@@ -1,0 +1,43 @@
+{
+  "SwinV2-S_raw": {
+    "accuracy": 0.9748201438848921
+  },
+  "SwinV2-S_raw_TTA": {
+    "accuracy": 0.9712230215827338
+  },
+  "SwinV2-S_ema": {
+    "accuracy": 0.9712230215827338
+  },
+  "SwinV2-S_ema_TTA": {
+    "accuracy": 0.9640287769784173
+  },
+  "EfficientNetV2-CBAM_raw": {
+    "accuracy": 0.9784172661870504
+  },
+  "EfficientNetV2-CBAM_raw_TTA": {
+    "accuracy": 0.9748201438848921
+  },
+  "EfficientNetV2-CBAM_ema": {
+    "accuracy": 0.9820143884892086
+  },
+  "EfficientNetV2-CBAM_ema_TTA": {
+    "accuracy": 0.9748201438848921
+  },
+  "ConvNeXt-CBAM-FPN_raw": {
+    "accuracy": 0.9856115107913669
+  },
+  "ConvNeXt-CBAM-FPN_raw_TTA": {
+    "accuracy": 0.9856115107913669
+  },
+  "ConvNeXt-CBAM-FPN_ema": {
+    "accuracy": 0.9856115107913669
+  },
+  "ConvNeXt-CBAM-FPN_ema_TTA": {
+    "accuracy": 0.9892086330935251
+  },
+  "best_ensemble": {
+    "accuracy": 0.9928057553956835,
+    "auc": 0.9983200878723267,
+    "config": "{'models': {'SwinV2-S_raw': np.float64(0.5000000000000001), 'EfficientNetV2-CBAM_raw': np.float64(0.4999999999999999)}, 'threshold': np.float64(0.35)}"
+  }
+}

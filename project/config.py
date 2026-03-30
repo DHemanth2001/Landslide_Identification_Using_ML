@@ -4,7 +4,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 RAW_DATA_DIR = os.path.join(DATA_DIR, "raw")
-PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "processed")
+PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "binary_combined_expanded")
 EXCEL_DIR = os.path.join(DATA_DIR, "excel")
 CHECKPOINTS_DIR = os.path.join(BASE_DIR, "checkpoints")
 PLOTS_DIR = os.path.join(BASE_DIR, "plots")
@@ -25,6 +25,7 @@ EXCEL_FILE = os.path.join(EXCEL_DIR, "data set (1).xlsx")
 # Model configuration
 CONVNEXT_IMG_SIZE = (224, 224)     # ConvNeXt-Base native pretrained size
 SWINV2_IMG_SIZE = (256, 256)       # SwinV2-Small native pretrained size
+EFFNETV2_IMG_SIZE = (384, 384)     # EfficientNetV2-S optimal resolution
 IMG_SIZE = CONVNEXT_IMG_SIZE       # Primary model image size
 
 BATCH_SIZE = 16                    # Smaller batch for larger models + mixup
@@ -32,7 +33,7 @@ NUM_EPOCHS = 50                    # More epochs for thorough convergence
 LEARNING_RATE = 5e-5               # Lower LR for pretrained backbones
 UNFREEZE_EPOCH = 8                 # Unfreeze backbone after 8 warm-up epochs
 DROPOUT_RATE = 0.4                 # Slightly less dropout with label smoothing
-NUM_CLASSES = 6                    # 6-class: non_landslide + 5 landslide types
+NUM_CLASSES = 2                    # Binary: non_landslide vs landslide
 
 # Advanced training hyperparameters
 LABEL_SMOOTHING = 0.1              # Prevents overconfident predictions
@@ -52,6 +53,8 @@ CONVNEXT_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "convnext_cbam_fpn_best.pth"
 SWINV2_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "swinv2_s_best.pth")
 EMA_CONVNEXT_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "convnext_cbam_fpn_ema_best.pth")
 EMA_SWINV2_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "swinv2_s_ema_best.pth")
+EFFNETV2_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "efficientnetv2_cbam_best.pth")
+EMA_EFFNETV2_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "efficientnetv2_cbam_ema_best.pth")
 
 # Legacy checkpoint paths (kept for backward compatibility)
 ALEXNET_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "alexnet_best.pth")
@@ -60,8 +63,8 @@ VIT_CHECKPOINT = os.path.join(CHECKPOINTS_DIR, "vit_b_16_best.pth")
 
 # Dataset: HR-GLDD (from Zenodo 7189381), converted from numpy to JPEG
 # 6-class multi-class classification
-TRAIN_LANDSLIDE = 616
-TRAIN_NON_LANDSLIDE = 1574
+TRAIN_LANDSLIDE = 8008
+TRAIN_NON_LANDSLIDE = 7870
 VAL_LANDSLIDE = 158
 VAL_NON_LANDSLIDE = 392
 TEST_LANDSLIDE = 211
@@ -72,18 +75,11 @@ DATASET_SPLITS = ["train", "val", "test"]
 NORMALIZE_MEAN = [0.485, 0.456, 0.406]
 NORMALIZE_STD = [0.229, 0.224, 0.225]
 
-# 6-class configuration
-CLASS_NAMES = [
-    "non_landslide", "rockfall", "mudflow",
-    "debris_flow", "rotational_slide", "translational_slide",
-]
+# Binary classification configuration
+CLASS_NAMES = ["non_landslide", "landslide"]
 LABEL_MAP = {
     "non_landslide": 0,
-    "rockfall": 1,
-    "mudflow": 2,
-    "debris_flow": 3,
-    "rotational_slide": 4,
-    "translational_slide": 5,
+    "landslide": 1,
 }
 
 # Ensemble weights — ConvNeXt-CBAM-FPN + SwinV2-Small

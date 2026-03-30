@@ -1,0 +1,22 @@
+{
+  "EfficientNetV2-CBAM_raw": {
+    "accuracy": 0.8422459893048129,
+    "auc": null
+  },
+  "EfficientNetV2-CBAM_ema": {
+    "accuracy": 0.8368983957219251,
+    "auc": null
+  },
+  "ConvNeXt-CBAM-FPN_raw": {
+    "accuracy": 0.8716577540106952,
+    "auc": null
+  },
+  "ConvNeXt-CBAM-FPN_ema": {
+    "accuracy": 0.8716577540106952,
+    "auc": null
+  },
+  "ensemble": {
+    "accuracy": 0.8609625668449198,
+    "auc": 0.9390934446294921
+  }
+}

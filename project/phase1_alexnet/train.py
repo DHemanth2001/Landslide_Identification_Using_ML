@@ -31,6 +31,7 @@ from phase1_alexnet.dataset import (
 from phase1_alexnet.model import (
     get_convnext_cbam_fpn,
     get_swinv2_s,
+    get_efficientnetv2_cbam,
     EMAModel,
     # Legacy
     get_model,
@@ -46,8 +47,8 @@ def set_seed(seed: int = 42):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = False
+    torch.backends.cudnn.benchmark = True  # Faster for fixed input sizes
 
 
 def get_cosine_schedule_with_warmup(optimizer, warmup_epochs, total_epochs, min_lr=1e-7):
@@ -71,9 +72,10 @@ def train_one_epoch(
     ema: EMAModel = None,
     use_mixup: bool = True,
     epoch: int = 0,
+    scaler: torch.amp.GradScaler = None,
 ) -> tuple:
     """
-    Run one training epoch with optional Mixup/CutMix.
+    Run one training epoch with optional Mixup/CutMix and AMP.
 
     Returns:
         (avg_loss, accuracy) for the epoch.
@@ -101,20 +103,26 @@ def train_one_epoch(
         else:
             mixed = False
 
-        optimizer.zero_grad()
-        outputs = model(images)
+        optimizer.zero_grad(set_to_none=True)
 
-        if mixed:
-            loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
+        # AMP forward pass
+        with torch.amp.autocast("cuda"):
+            outputs = model(images)
+            if mixed:
+                loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
+            else:
+                loss = criterion(outputs, labels)
+
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), config.GRADIENT_CLIP_NORM)
+            scaler.step(optimizer)
+            scaler.update()
         else:
-            loss = criterion(outputs, labels)
-
-        loss.backward()
-
-        # Gradient clipping for stability
-        torch.nn.utils.clip_grad_norm_(model.parameters(), config.GRADIENT_CLIP_NORM)
-
-        optimizer.step()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), config.GRADIENT_CLIP_NORM)
+            optimizer.step()
 
         # Update EMA after each step
         if ema is not None:
@@ -156,8 +164,9 @@ def validate(
     with torch.no_grad():
         for images, labels in tqdm(loader, desc="  Val  ", leave=False):
             images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
-            loss = criterion(outputs, labels)
+            with torch.amp.autocast("cuda"):
+                outputs = model(images)
+                loss = criterion(outputs, labels)
 
             total_loss += loss.item() * images.size(0)
             preds = outputs.argmax(dim=1)
@@ -191,6 +200,14 @@ def unfreeze_backbone(model, model_name, learning_rate, optimizer):
         backbone_params = []
         for name, param in model.named_parameters():
             if "head" in name:
+                head_params.append(param)
+            else:
+                backbone_params.append(param)
+    elif model_name == "efficientnetv2_cbam":
+        head_params = []
+        backbone_params = []
+        for name, param in model.named_parameters():
+            if "classifier" in name or "cbam" in name:
                 head_params.append(param)
             else:
                 backbone_params.append(param)
@@ -274,6 +291,10 @@ def run_training(
         model = get_swinv2_s(num_classes=config.NUM_CLASSES, freeze=True)
         checkpoint_path = config.SWINV2_CHECKPOINT
         ema_checkpoint_path = config.EMA_SWINV2_CHECKPOINT
+    elif model_name == "efficientnetv2_cbam":
+        model = get_efficientnetv2_cbam(num_classes=config.NUM_CLASSES, freeze=True)
+        checkpoint_path = config.EFFNETV2_CHECKPOINT
+        ema_checkpoint_path = config.EMA_EFFNETV2_CHECKPOINT
     elif model_name == "efficientnet_b3":
         model = get_efficientnet_b3(num_classes=config.NUM_CLASSES)
         checkpoint_path = config.EFFICIENTNET_CHECKPOINT
@@ -307,6 +328,9 @@ def run_training(
         criterion = nn.CrossEntropyLoss(label_smoothing=config.LABEL_SMOOTHING)
         print(f"Using Cross-Entropy Loss (label_smoothing={config.LABEL_SMOOTHING})")
 
+    # ── AMP GradScaler for mixed precision ────────────────────────────────
+    scaler = torch.amp.GradScaler("cuda") if device.type == "cuda" else None
+
     # ── Scheduler: warmup + cosine decay ──────────────────────────────────
     scheduler = get_cosine_schedule_with_warmup(
         optimizer,
@@ -337,7 +361,7 @@ def run_training(
         # ── Train ─────────────────────────────────────────────────────────
         train_loss, train_acc = train_one_epoch(
             model, train_loader, optimizer, criterion, device,
-            ema=ema, use_mixup=use_mixup, epoch=epoch,
+            ema=ema, use_mixup=use_mixup, epoch=epoch, scaler=scaler,
         )
 
         # ── Validate (raw model) ─────────────────────────────────────────
