@@ -1,0 +1,72 @@
+<svg width="900" height="750" xmlns="http://www.w3.org/2000/svg">
+<style>
+  .title { font-size: 18px; font-weight: bold; fill: black; }
+  .label { font-size: 12px; fill: black; }
+  .event { r: 3; fill: blue; opacity: 0.6; }
+  .hotspot { r: 15; fill: red; }
+</style>
+<title>Landslide Risk Hotspot - Bijie, China</title>
+<text x="50" y="30" class="title">Landslide Risk Hotspot — Bijie, China</text>
+<text x="50" y="50" class="label">Red star = Predicted Hotspot | Blue dots = Historical Events | Red dashed circle = Risk Zone</text>
+
+<!-- Map background -->
+<rect x="40" y="70" width="800" height="600" fill="#e6f2ff" stroke="black" stroke-width="1"/>
+
+<!-- Latitude/Longitude grid -->
+<line x1="40" y1="636.6666666666666" x2="840" y2="636.6666666666666" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="640.6666666666666" class="label" font-size="10">20°</text>
+<line x1="40" y1="553.3333333333334" x2="840" y2="553.3333333333334" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="557.3333333333334" class="label" font-size="10">25°</text>
+<line x1="40" y1="470.0" x2="840" y2="470.0" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="474.0" class="label" font-size="10">30°</text>
+<line x1="40" y1="386.6666666666667" x2="840" y2="386.6666666666667" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="390.6666666666667" class="label" font-size="10">35°</text>
+<line x1="40" y1="303.33333333333337" x2="840" y2="303.33333333333337" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="307.33333333333337" class="label" font-size="10">40°</text>
+<line x1="40" y1="220.0" x2="840" y2="220.0" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="224.0" class="label" font-size="10">45°</text>
+<line x1="40" y1="136.66666666666666" x2="840" y2="136.66666666666666" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="140.66666666666666" class="label" font-size="10">50°</text>
+<line x1="65.80645161290323" y1="70" x2="65.80645161290323" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="50.80645161290323" y="690" class="label" font-size="10">75°</text>
+<line x1="194.83870967741936" y1="70" x2="194.83870967741936" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="179.83870967741936" y="690" class="label" font-size="10">85°</text>
+<line x1="323.8709677419355" y1="70" x2="323.8709677419355" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="308.8709677419355" y="690" class="label" font-size="10">95°</text>
+<line x1="452.9032258064516" y1="70" x2="452.9032258064516" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="437.9032258064516" y="690" class="label" font-size="10">105°</text>
+<line x1="581.9354838709677" y1="70" x2="581.9354838709677" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="566.9354838709677" y="690" class="label" font-size="10">115°</text>
+<line x1="710.9677419354839" y1="70" x2="710.9677419354839" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="695.9677419354839" y="690" class="label" font-size="10">125°</text>
+
+<!-- Historical events (blue dots) -->
+<circle cx="457.61672516129033" cy="523.552601" class="event"/>
+<circle cx="462.82322580645155" cy="525.7716666666666" class="event"/>
+<circle cx="451.11354838709684" cy="510.22999999999996" class="event"/>
+<circle cx="448.6103225806451" cy="521.4" class="event"/>
+<circle cx="451.11354838709684" cy="510.22999999999996" class="event"/>
+<circle cx="449.39483870967746" cy="517.9333333333334" class="event"/>
+<circle cx="451.3612903225806" cy="514.2666666666667" class="event"/>
+<circle cx="456.63612903225805" cy="515.8633333333333" class="event"/>
+<circle cx="456.6012903225807" cy="513.3166666666666" class="event"/>
+<circle cx="460.8270967741934" cy="517.0649999999999" class="event"/>
+<circle cx="447.4412903225807" cy="518.3533333333334" class="event"/>
+<circle cx="451.28774193548384" cy="512.5183333333334" class="event"/>
+<circle cx="461.53346193548396" cy="525.4559816666667" class="event"/>
+
+<!-- Predicted hotspot (red star) -->
+<polygon points="456.51612903225805,505.0 
+462.21612903225804,514.3 
+471.51612903225805,520.0 
+462.21612903225804,525.7 
+456.51612903225805,535.0 
+450.81612903225806,525.7 
+441.51612903225805,520.0 
+450.81612903225806,514.3" 
+fill="red" stroke="darkred" stroke-width="1"/>
+<circle cx="456.51612903225805" cy="520.0" r="5.812263876780006" 
+fill="none" stroke="red" stroke-width="2" stroke-dasharray="5,5"/>
+<text x="50" y="720" class="label">Hotspot Location: Lat 27.0000, Lon 105.2800</text>
+<text x="50" y="740" class="label">Historical events nearby: 13</text>
+</svg>

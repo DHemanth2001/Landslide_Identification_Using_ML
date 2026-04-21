@@ -1,0 +1,1650 @@
+=== PAGE 1 ===
+Optimizing VM Placement in Cloud Data Centers Using a Hybrid GWO-BPSO 
+Algorithm 
+Dissertation submitted in partial fulfilment of the requirements for the award of the 
+Degree 
+of 
+Master of Technology 
+in 
+Information System Security Engineering 
+Department of Computer Science Engineering 
+by 
+MONALI SAHA 
+(2023PGCSIS001) 
+Under the guidance 
+of 
+ 
+Dr. DINESH KUMAR 
+(Assistant Professor) 
+ 
+DEPARTMENT OF COMPUTER SCIENCE & ENGINEERING 
+NATIONAL INSTITUTE OF TECHNOLOGY 
+JAMSHEDPUR 
+JUNE 2025 
+
+=== PAGE 2 ===
+ 
+ 
+NATIONAL INSTITUTE OF TECHNOLOGY 
+JAMSHEDPUR 
+CANDIDATE’S DECLARATION 
+ 
+I declare that the work presented in this dissertation entitled “Optimizing VM Placement in 
+Cloud Data Centers Using a Hybrid GWO-BPSO Algorithm” submitted to the Department of 
+Computer Science & Engineering, National Institute of Technology, Jamshedpur (India) - 831014 
+for the award of Master of Technology Degree in Structural Engineering, is my original work. I 
+neither have plagiarized any part of the dissertation nor submitted the same work for the award of 
+any other Degree anywhere. In case this undertaking is found incorrect, the degree shall be 
+withdrawn unconditionally. 
+ 
+ 
+ 
+ 
+ NIT Jamshedpur 
+ Date – 5th June, 2025 
+(MONALI SAHA) 
+(2023PGCSIS001) 
+ 
+ 
+ 
+ 
+ 
+ 
+
+=== PAGE 3 ===
+ACKNOWLEDGEMENT 
+ 
+I am grateful to the Dept. of Computer Science & Engineering, NIT Jamshedpur, for allowing me 
+to execute this project, which is an integral part of the curriculum in the M.Tech program at the 
+NIT Jamshedpur.  
+ 
+I express my deepest gratitude and indebtedness to my project guide Dr. Dinesh Kumar for 
+introducing the present topic and for their inspiring guidance, constructive criticism and valuable 
+suggestions throughout this project work.  
+ 
+My special thanks to Dr. D.A. Khan, Head of Computer Science & Engineering Department, for 
+all the facilities provided to complete this work. I am also very thankful to all the faculty members 
+of the Computer Science & Engineering department, for their constant encouragement, Invaluable 
+advice, Inspiration and blessings during the project.  
+ 
+Finally, I would like to thank my parents for their constant support, encouragement during the ups 
+and downs of life.  
+ 
+ 
+MONALI SAHA 
+(2023PGCSIS001) 
+ 
+ 
+ 
+ 
+
+=== PAGE 4 ===
+Abstract 
+Cloud computing has become a widely-used computing paradigm offering on-demand access for 
+users to shared computing resources. Whether an organization is using the cloud for business or a 
+customer is using it to stream video, managing the resources in the data centers is still a significant 
+challenge since it is getting more complex as the size of data centers grows larger. In cloud 
+computing, the efficient placement of Virtual Machines (VMs) across physical servers is a critical 
+task to optimize resource utilization, minimize power consumption and reduce communication 
+overhead. IT is an NP-hard problem, which means that it is computationally complex and 
+infeasible to compute. Thus, metaheuristic approaches must be employed that can effectively 
+traverse the larger solution space and solve it in exponential time. 
+This study proposes a Hybrid Multi-Objective Optimization Algorithm by integrating Grey Wolf 
+Optimization (GWO) and Binary Particle Swarm Optimization (BPSO) to solve the problem of 
+VM placement. It integrates the explorative potentials of GWO and the exploitive ability and 
+strong convergence speed of BPSO to increase the optimization. The proposed hybrid algorithm 
+uses self-mutation to maintain population diversity and to avoid premature convergence by 
+adaptively switching between GWO, BPSO and randomized local searching through dynamic 
+thresholds. Additionally, the examined formulation includes multi-objective evaluation criteria 
+that minimize resource wastage, power consumption and communication cost. 
+In order to validate this methodology, simulations are implemented on a Fat-Tree topology, which 
+is generally regarded as a typical topology in a cloud computing environment that has throughput 
+and scalability for network designs. The parameters, system model and mutation logic are altered 
+to be representative of real data center performance. Experimental results made it clear that the 
+performance of the hybrid GWO-BPSO is greater than the standard GWO and BPSO in terms of 
+convergence, energy savings, optimal VM usage, scalability under high loads.  
+ 
+ 
+ 
+ 
+
+=== PAGE 5 ===
+Table of Contents 
+Chapter 1: Introduction ........................................................................................................ 1 
+1.1 Overview of Cloud Computing ....................................................................................... 1 
+1.2 Overview of Fat Tree Architecture & It’s Benefits........................................................... 2 
+1.3 Virtualization & It’s Importance ..................................................................................... 4 
+1.4 Nature Inspired Algorithm .............................................................................................. 5 
+1.5 Motivation ..................................................................................................................... 6 
+1.6 Contribution ................................................................................................................... 7 
+1.7 Thesis Organization........................................................................................................ 8 
+Chapter 2: Literature Survey .............................................................................................. 10 
+Chapter 3: System Model & Problem Formulation ............................................................ 14 
+3.1 System Model .............................................................................................................. 14 
+3.2 Problem Statement ....................................................................................................... 15 
+3.3 Objectives & Problem Formulation ............................................................................... 16 
+3.3.1 Objectives.............................................................................................................. 16 
+3.3.2 Fitness Function ..................................................................................................... 17 
+3.3.3 Constraints............................................................................................................. 18 
+Chapter 4: The Proposed..................................................................................................... 19 
+4.1 Grey Wolf Optimization ............................................................................................... 19 
+4.2 Binary Particle Swarm Optimization ............................................................................. 21 
+4.3 Hybrid GWO-BPSO ..................................................................................................... 22 
+4.3.1 Algorithm .............................................................................................................. 23 
+4.3.2 Flowchart Explanation ........................................................................................... 25 
+4.3.3. Advantages............................................................................................................... 26 
+Chapter 5: Performance Evaluation.................................................................................... 28 
+
+=== PAGE 6 ===
+5.1 Environment & Tools ................................................................................................... 28 
+5.2 Parameter Settings ........................................................................................................ 29 
+5.2.1 Server’s Specification ............................................................................................ 29 
+5.2.2 GWO Parameters ................................................................................................... 30 
+5.2.3 BPSO Parameters................................................................................................... 31 
+5.2.4 Self-mutate Parameters........................................................................................... 31 
+5.3 Result and Analysis ...................................................................................................... 32 
+5.3.1 Convergence Comparison....................................................................................... 32 
+5.3.2. Impact of Increasing Number of VMs .................................................................... 33 
+5.3.3. Impact of Increasing Number of PMs..................................................................... 35 
+5.3.4. Impact of Increasing Population Size ..................................................................... 37 
+Chapter 6: Conclusion & Future Scope............................................................................... 38 
+6.1 Conclusion ................................................................................................................... 38 
+6.2 Future Scope ................................................................................................................ 38 
+References ........................................................................................................................ 39 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+=== PAGE 7 ===
+List of Figures 
+Figure 1: Cloud computing architecture.…………………………………………………………………..1 
+Figure 2: Fat- Tree architecture with number of POD is 4………………………………………………...3 
+Figure 3: Nature inspired algorithms......…………………………………………………………………..4 
+Figure 4: Efficient placement of Virtual Machine into servers.....……………………………………….15 
+Figure 5: Sample of solution………….…………………………………………………………………..14 
+Figure 6: Process flow of GWO…………………………………………………………………………..19 
+Figure 7: Process flow of BPSO………………………………………………………………………….21 
+Figure 8: Process flow of Hybrid GWO-BPSO Algorithm………………………………………………26 
+Figure 9 (a): Convergence graph of BPSO……………………………………………………………….32 
+Figure 9 (b): Convergence graph of GWO……………………………………………………………….32 
+Figure 9 (c): Convergence graph of Hybrid GWO-BPSO………………………………………………..32 
+Figure 9 (d): Comparison graph of convergence of Hybrid GWO-BPSO with BPSO and GWO……….32 
+Figure 10: Comparison of fitness values by increasing number of VMs ………………………………..34 
+Figure 11: Comparison of fitness value by increasing number of PODs ………………………………..36 
+Figure 12: Comparison of fitness value by increasing population size ………………………………….37 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+=== PAGE 8 ===
+List of Tables 
+Table 1: Summary of Existing Works on VM Placement…………………………………..……………11 
+Table 2: VMs Specifications……………………………………………………………………………..29 
+Table 3: Server Specifications……………………………………………………………………………29 
+Table 4: Values of the Hybrid algorithm and control parameters………………………………………..30 
+Table 5: Values of the BPSO and control parameters……………………………………………………30 
+Table 6: Relation between PODs and PMs ……………………………………………………………...35 
+
+=== PAGE 9 ===
+1 
+ 
+Chapter 1: Introduction 
+Cloud computing has emerged as a critical component of contemporary IT infrastructure, allowing 
+for scalable and flexible resource provisioning. In cloud computing, one of the main concerns is 
+the efficient placement of Virtual Machines (VMs) on physical servers within a data center, 
+especially for large-scale data centers. The research study in this dissertation will investigate this 
+placement challenge in connection to the Fat-Tree architecture, a standard topology in the cloud 
+computing domain that has high bandwidth and scalability. 
+1.1 Overview of Cloud Computing 
+Cloud computing is a modern computing model that provides a variety of services like servers, 
+memory, databases, networks, software, etc. Instead of investing in physical infrastructure, 
+businesses and individuals can access the services of cloud providers that are consumed as pay-as-
+you-go. This way, users don’t have to buy or maintain costly hardware themselves, as cloud 
+providers handle it. It also gives users the privilege to scale their services and stay flexible as per 
+their needs. As it is a service over the Internet, users can typically access the service, improve 
+speed of use, improve cooperation and increase operational flexibility.  
+Cloud computing offers a variety of provisioning models to meet different organizational 
+requirements. Figure 1 represents the architecture of cloud computing which includes its model, 
+top providers, key features and characteristics. Public Clouds owned by a third-party has the 
+advantage of affordability and scalability. The private cloud model is designed for a single 
+organization, making it suitable for those who need more control and security. Therefore, 
+businesses choosing a private cloud model should consider the additional costs associated with 
+this privacy. Hybrid clouds consist of both public and private cloud models offering greater 
+flexibility, scalability and efficiency. Data and applications can now travel between environments. 
+Hybrid Cloud allows businesses to have the advantages of both model features, while 
+simultaneously optimizing regulatory compliance and performance standards. Community Clouds 
+share cloud environments across different organizations that can share the same regulatory 
+requirements and security issues. Companies can share infrastructure and maintain target control 
+at the same time. 
+
+=== PAGE 10 ===
+2 
+ 
+ 
+Figure 1: Cloud computing architecture 
+Cloud computing mainly provides three service models. The first is Infrastructure as a Service 
+(IAAS) which provide full set-up of cloud to an institution or organization. The second is called 
+Platform as a service (PAAS), where providers provide a platform where developers and users can 
+create, test and deliver applications. The third, known as Software as a Service (SAAS), provides 
+users with a complete software application over the Internet. In many cases, a web browser is used 
+as the interface. Users generally do not need to install software parts locally. 
+Leading providers like AWS, Azure, Google have comfortable feet in the competitive cloud 
+market as they are useful, reliable, scalable and continuous innovation to achieve different 
+organizations and their goals. Companies can deliver services quickly and use the latest 
+technologies such as artificial intelligence, big data analytics, machine learning and more.  
+Cloud infrastructure can support business continuity through global processes, automated backups, 
+disaster recovery and improved safety conformance frameworks. Because digital transformation 
+is a must for the industry, cloud computing becomes the underlying technology that enables agility, 
+competitiveness and innovation within ever-changing digital space. 
+1.2 Overview of Fat Tree Architecture & It’s Benefits 
+The Fat-Tree architecture is a network topology in modern data centers, particularly in support of 
+cloud computing and high-performance computing environments [1]. It comes from traditional 
+tree topology. The term "fat" refers to the increased number of connections as you move up the 
+hierarchy, which helps provide more bandwidth and reduce network bottlenecks. This architecture 
+organizes network switches at several layers of edge, aggregation and core. Each switch is 
+
+=== PAGE 11 ===
+3 
+ 
+connected to several switches on the top layer, allowing multiple paths to place data. This improves 
+overall network load compensation and fault tolerance. 
+The fat tree architecture provides many significant benefits, one of them being that it achieves non-
+blocking bandwidth and high linking capacity between a number of hosts in the network.  
+This is particularly applicable in data centers where many virtual machines and applications rely 
+on consistent communication to perform execution. The architecture is shown in figure 2 where 4 
+core switches, 8 aggregated switches and 8 edge switches are taken. Overall PMs is calculated as 
+(N/2)^2*2 which is 16 here (N is number of PODs which 4 here). With an even distribution of 
+traffic across several paths, the fat tree minimizes the probability of congestion and consumes 
+resources efficiently. An even bandwidth availability also allows for high-throughput 
+communication which can assist with parallel processing or load balancing. 
+ 
+Figure 2: Fat- Tree architecture with number of POD is 4 
+The fat tree architecture's ability to scale is another major benefit. Fat tree architecture can 
+incrementally expand in data center by just adding more edge and aggregation switches. This 
+incremental approach is more cost-effective and fits well with modern way of requirements used 
+in cloud based infrastructures. Additionally, the use of commodity switches and standardized 
+components in a Fat-Tree design reduces implementation costs while maintaining high levels of 
+performance and availability. 
+
+=== PAGE 12 ===
+4 
+ 
+This design resolves the shortcomings of the traditional tree topology, where there can be a limited 
+capacity for redundant paths and increased aggregate ribbon widths. For environments with strictly 
+defined communication patterns, this makes the fat tree architecture ideal. As cloud services 
+expand even further and virtualization becomes ever more ubiquitous, fat tree architectures will 
+remain the primary architecture for performance, fault tolerance and scalability of large networked 
+systems. 
+1.3 Virtualization & It’s Importance 
+Virtualization is a fundamental technology in modern computing that enables multiple virtual 
+machines (VMs) to run concurrently on a single physical server. Each VM is treated as its 
+independent entity with its operating system and allocated plenty of resources in a physical server, 
+without impacting or having awareness of the underlying physical hardware. This gives many 
+advantages such as flexibility, higher utilization of hardware capabilities and simplified 
+management of resources in cloud and data center environments. In the current trend of focusing 
+primarily on cloud-based services, virtualization, is essential to approaching scalability, cost 
+savings and managing ever-changing workloads dynamically. 
+A significant issue within virtualization is the Virtual Machine Placement (VMP) problem that 
+refers to a process of assigning a set of VMs to a set of PMs in a way that optimizes multiple 
+objectives such as energy efficiency, performance, load balancing, utilization and other 
+optimization metrics [3]. The problem complexity increases rapidly as the number of VMs and 
+PMs increase since each placement decision needs to optimize placement constraints across 
+multiple resource dimensions such as CPU, memory, bandwidth, etc. A poorly placed VM will 
+create some resource overload, greater power costs, or poorly-utilized servers, thereby degrading 
+the overall efficiency of the cloud infrastructure. 
+VM placement is frequently cited as an NP-hard problem and is often framed as a special case of 
+the multidimensional knapsack problem (MKP), where each item has a value and takes up different 
+amounts of multiple resources without exceeding its capacity. There are similar conditions in VMP 
+i.e. placing of VMs should give optimized objective solution and validating capacity constraints. 
+In reality, this provides considerable amounts of combinatorial possibilities that cannot be exactly 
+computed in a time efficient manner for large-scale scenarios. This has often meant the use of 
+heuristic and metaheuristic algorithms. 
+
+=== PAGE 13 ===
+5 
+ 
+For the NP-Hard problems, nature-inspired algorithms such as Particle Swarm Optimization 
+(PSO), Genetic Algorithms (GA) and Grey Wolf Optimizer (GWO) have gained a lot of attention 
+for efficiently solving VM placement issues. These algorithms can find acceptable near-optimal 
+solutions in reasonable timeframes, likely making them reliable and efficient in dynamic and large-
+scale cloud-computing scenarios where rapid decision-making is required. Therefore, 
+virtualization can take advantage of intelligent optimization strategies to increase throughput, save 
+energy and improve Quality of Service (QoS) within data centers. 
+1.4 Nature Inspired Algorithm 
+Nature-inspired algorithms are optimization methods based on examples found in the nature 
+including, evolution, animal behaviors and physical processes. These algorithms are adept at 
+tackling difficult, high-dimensional and nonlinear problems in a manner where classic 
+mathematical optimization techniques are not as effective. Nature-inspired algorithms can yield 
+general, flexible solutions which encourage adaptive, intelligent behaviours found in nature [2]. 
+They are used to resolve NP-hard problems like bin packing problem or multi-dimensional 
+knapsack problem as it can find the near optimal solution in exponential time with efficiency and 
+consistency. 
+Some well-known examples include Genetic Algorithms (GA), Particle Swarm Optimization 
+(PSO), Grey Wolf Optimizer (GWO), Ant Colony Optimization (ACO) and Firefly Algorithm 
+(FA). Figure 3 shows many of these meta-heuristic algorithms and its specifications. Each 
+algorithm is guided by an analogy drawn from nature, e.g., PSO models the social behaviour of a 
+flock of birds and GWO applies the hunting behaviour of grey wolves. These algorithms follow 
+simple rules that are applied to a large population of candidate solutions to sample the solution 
+space in parallel using stochastic processes, e.g., selection, crossover, mutation and velocity 
+updates. One of the main advantages of nature-inspired algorithms is their ability to balance 
+between exploration i.e. diversifying the search across the solution space and exploitation by 
+intensifying the search around good solutions.  
+
+=== PAGE 14 ===
+6 
+ 
+ 
+Figure 3: Nature inspired algorithms 
+Fine and correct tuning of this balance is necessary to improve performance and result. Parameters 
+such as the inertia weight parameter in PSO or the coefficient A parameter in GWO dynamically 
+regulate the transition from exploration to exploitation. However, when they are not tuned 
+properly, the algorithms might have issues such as premature convergence or local optima. 
+In conclusion, nature-inspired algorithms have proven to be valuable resources to tackle real-world 
+optimization problem and particularly in scheduling problems, machine learning problems, cloud 
+computing problems and network design problems. The adaptability and simplicity for 
+hybridization are very compelling, hybridization of two or more algorithms will generally improve 
+their performance. The development of such paradigms is indicative of the fact that natural and 
+biological intelligence serves as a powerful guide to our artificial attempts at problem solving. 
+1.5 Motivation 
+The rapid growth of cloud services has resulted in scalable, energy-efficient and performance-
+efficient infrastructure. Virtualization provides the backbone of cloud computing with its VM 
+allocation and deploying capability, enabling flexible resource sharing. However, VM placement 
+on the physical machines (PMs) presents a complex, multi-objective problem that considers the 
+trade-offs between the objectives of resource usage, energy consumption and communication cost. 
+This problem gets complicated in data center topologies, which provide higher bandwidth and 
+scaling, but can also suffer from inefficient placement of VMs across the PMs. 
+Existing algorithms frequently fail to consider the complexity and dynamism associated with VM 
+placement. Single metaheuristic algorithms certainly have their benefits in some situations, but 
+they frequently prematurely converge or become stuck in a local optimum due to an imbalance 
+
+=== PAGE 15 ===
+7 
+ 
+between explorations vs. exploitation. For example, although Grey Wolf Optimizer (GWO) is a 
+strong global search method, it cannot converge well in the later stages while Binary Particle 
+Swarm Optimization (BPSO) converges quickly, but does not have diversity on a number of the 
+solutions facing local minima trap. This dictates the requirement for a hybrid approach by coupling 
+the exploration of GWO with the exploitation behaviour of BPSO. 
+In addition, the Fat-Tree topology also introduces a hierarchical and bandwidth-aware constraint 
+that has significant implications for the efficiency of VM placement. It allows to reduce network 
+congestion and unbalance in load. Therefore, an algorithm must include topology awareness if it 
+is to effectively reduce cost of data center communication, which contributes to energy profile and 
+QoS coordinates. 
+Therefore, this work is motivated to create a hybrid multi-objective metaheuristic that balances 
+multiple conflicting objectives, such as energy efficiency, minimal communication delay and 
+resource wastage, while also taking into account the current constraints and requirements of data 
+center topologies. The GWO-BPSO hybrid algorithm proposed seeks to provide an intelligent 
+adaptive solution to this NP-hard problem by providing better convergence, maintaining diversity 
+and achieving better VM allocations in cloud environments based on Fat-Tree. 
+1.6 Contribution 
+This work makes important contributions to the field of virtual machine (VM) placement and 
+resource optimization, specifically in cloud computing settings where communication cost and 
+energy usage are minimized.  The main contributions of this work are: 
+Development of a Hybrid GWO-BPSO Algorithm for VM Placement 
+A new hybrid metaheuristic method that combines Grey Wolf Optimization (GWO) and Binary 
+Particle Swarm Optimization (BPSO) to solve the Virtual Machine Placement (VMP) problem.  
+The proposed hybrid method is as a result of GWO's global exploration capability and BPSO's 
+ability to quickly converge to a solution, providing an adequate trade-off between exploration and 
+exploit, producing better quality solutions more quickly.  
+Integration of Communication Cost, Efficient Consumption of Power and Resource in Fitness 
+Function 
+
+=== PAGE 16 ===
+8 
+ 
+The research proposes a fitness function for minimizing energy consumption, resource wastage 
+and communication cost. As a multi-objective formulation, this approach not only minimizes 
+energy consumption across the entire data center, but also increases the overall network efficiency 
+by bringing communicating VMs closer together eventually increase the resource utilization. 
+Introduction of Self-Mutate Mechanism with Adaptive Control Parameters 
+An inherent self-mutating strategy in the hyper-optimization loop is enforced via two parameter 
+limits, 𝜇_𝑙𝑖𝑚𝑖𝑡 and 𝜃_𝑙𝑖𝑚𝑖𝑡 in an adaptive way that uses randomness to ensure the trade-off 
+between algorithms with randomness when it shows signs of stagnation, helping to avoid local 
+optima and injection variation amongst solutions. 
+Comprehensive Evaluation through Realistic Scenarios 
+Simulation experiments have been performed with VMs specification based on real-world 
+workloads with actual PM configuration and the hybrid algorithm has been tested against classical 
+metaheuristic algorithms GWO and BPSO and standard bin-packing heuristics methods as FFD, 
+best fit, worst-fit and RA within a variety of system sizes such as varying number of VMs and 
+PODs. The results show that the hybrid algorithm outperforms all other methods for optimizing 
+the fitness value and is more scalable than other systems. 
+1.7 Thesis Organization 
+This thesis consists of six chapters where each chapter represents a different part of the research 
+work. The first chapter discusses the motivation as well as the basic concepts. The remaining 
+chapters proceed with system modeling, presentation of the hybrid optimization methodology 
+proposed, experimental setup with results and finally conclusions and future work. 
+Chapter 1 introduces the critical aspects of cloud computing, stresses the importance of resource 
+optimization and offers a justification for hybrid nature-inspired algorithms. This chapter discusses 
+the matter of Virtual Machine (VM) placement in cloud data centers and outlines the research 
+objectives relevant to the study. 
+Chapter 2 presents a thorough literature review of existing VM placement methods with an 
+emphasis on those using heuristic, metaheuristic, or hybrid methods and critically analyzes their 
+limitations in which it justifies proposing a new approach. 
+
+=== PAGE 17 ===
+9 
+ 
+In Chapter 3, the problem formulation and system model are defined. It describes the Fat-Tree 
+network topology in data centers and specifies the multi-objective optimization problem such as 
+minimizing the combined score on resource wastage, power consumption and communication cost 
+by validating the constraints regarding the feasibility of VM allocation. 
+In Chapter 4, discusses the main contribution of the thesis that is the hybrid GWO-BPSO 
+algorithm. It regards behavioral modeling of GWO and BPSO, mathematical formulations of the 
+algorithms, strengths, weaknesses of each algorithm and how the hybrid model mitigates those 
+weaknesses through using the best features of both GWO and BPSO and by allowing self-
+mutation. 
+Chapter 5 outline detailed, technical description of how you can put into practice everything 
+discussed in Chapter 4. These details include the programming environment, simulation software, 
+parameter settings and architecture descriptions. It also covers the results and analysis of the 
+proposed method, which includes convergence behavior, performance comparisons with 
+standalone algorithm and a visualization of how the proposed method improves VM placement 
+efficiency across multiple evaluation criteria. 
+The ending of chapter 6 features summary text describing the key findings and a discussion of 
+potential areas for future research such as scalability, adaptive parameter adjustment and 
+integration with real-time scheduling systems. 
+This organized approach is logical and provides complete coverage of the research problem, 
+solution approach, implementation and evaluation. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+=== PAGE 18 ===
+10 
+ 
+Chapter 2: Literature Survey 
+The Virtual Machine (VM) placement problem in Cloud Computing is a multi-dimensional 
+optimization problem which has become an area of immense research activity. Many metaheuristic 
+and deterministic algorithms have been developed to solve this problem with each addressing one 
+or more objectives such as minimizing energy consumption, resource under-utilization and 
+potential violation of the Service Level Agreement (SLA), opportunistic performance 
+maximization and load management. 
+In [2], they adopted heuristic-based techniques that were aimed at reducing the power consumed 
+and their SLA violations. Theoretically, this approach is both simple and scalable in real-time 
+systems, although it did not always provide an absolute solution. The work of [3] used Ant Colony 
+Optimization (ACO), which imitates the pheromone-strewn path taken by ants to balance load and 
+take advantage of available resources. Because of the adaptive nature of ACO solutions, it works 
+well in dynamic environments, however, it may not always converge quickly in scaled problem 
+spaces. 
+The authors of [3] applied a Genetic Algorithm (GA) method to reduce energy consumption, 
+capitalizing on its global search characteristics; however, the research concluded that performance 
+could deteriorate when GA parameters were poorly tuned. In the study of [4], they employed 
+Particle Swarm Optimization (PSO) to find a solution that jointly optimized SLA violations and 
+power consumption. While PSO proved easy to implement and had speed advantages, it had the 
+disadvantage of falling into local optima. This research [5] presents a multi-objective optimization 
+method for virtual machine placement in distributed cloud environments based on the NSGA-III 
+algorithm. The goal of the proposed approach is to reduce resource waste, power usage and 
+propagation delay in the network. The proposed approach reached a 7% better Overall 
+Nondominated Vector Generation and a 12% better spacing in comparison with existing 
+algorithms including VEGA, MOGA, SPEA and NSGA-II. 
+In [6] authors have conceptualized a deterministic bin packing notion, placing emphasis on 
+resource usage efficiency. While the deterministic bin packing was suitable for static resource 
+assignments, no mechanisms were implemented to deal with dynamic planning and multi-
+objective resource allocation. The study in [7] expanded on the work of [6] by introducing SLA-
+
+=== PAGE 19 ===
+11 
+ 
+based objectives and migration costs into the PSO objective function and reported that this 
+contributed to improved energy efficiency and service continuity. The work of [8] reported using 
+PSO to minimize resource wastage while effectively scheduling VMs on servers. They have 
+compared their work wth best-fit, first-fit and worst-fit approaches to evaluate the efficiency and 
+also experimented with scalability.  
+This paper[9] introduces a scheduling algorithm that leverages fuzzy logic to enhance virtual 
+machine (VM) allocation in cloud computing environments. By incorporating fuzzy logic, the 
+algorithm aims to handle the inherent uncertainties and dynamic nature of cloud systems, leading 
+to more efficient resource utilization. The authors in [10] took GA into a multi-objective realm 
+and examined energy, SLA and wasted resources. Although it offers an improved level of 
+flexibility, it consumes a lot of computing power. In [11] authors used the Firefly Algorithm for 
+power optimization - it is based on how fireflies use attraction-based movement. It converges 
+quickly, but can converge prematurely if diversity is lacking. 
+In paper [15] authors have exploited the BAT algorithm to optimize delay and energy tradeoffs. It 
+is inspired by the behavior of bats' echolocation, allowing it to easily switch between global and 
+local search.In [16] authors have combined GA and PSO to use both exploration and exploitation, 
+achieving good results reducing energy consumption and cost but using a hybrid approach makes 
+tuning complicated and often incurs extended running time. 
+In paper [17], they used Gravitational Search Algorithm (GSA) to minimize power consumption 
+from mass attraction in physics. GSA is novel but also sensitive to parameters and computationally 
+intensive. In [18] authors have treated the VM placement as an Integer Linear Programming (ILP) 
+problem and provided optimal answers but were only capable of solving small instances of the 
+problem. Furthermore, their approach lacked the ability to scale to a larger cloud data center. Table 
+1 summarizes the existing research works on VM placement, including the algorithms used, their 
+objectives and whether they are single or multi-objective. 
+Table 1: Summary of Existing Works on VM Placement 
+Paper Author(s) 
+Optimization 
+Algorithm 
+Objectives 
+Multi/Single 
+Objective 
+
+=== PAGE 20 ===
+12 
+ 
+[1] 
+Rashmi et 
+al. 
+2024 
+ACO-GWO 
+Resource Wastage 
+, Power Consumption 
+multi-objective 
+[3] 
+Tripathi et al. 
+2018 
+BPSO 
+Resource Wastage 
+, Power Consumption 
+multi-objective 
+[4] 
+Beloglazov 
+et 
+al., 2012 
+Heuristics 
+Power, SLA violation 
+multi-objective 
+[5] 
+Cao et al., 2017 
+Ant 
+Colony 
+Optimization (ACO) 
+Load 
+balancing, 
+Resource utilization 
+multi-objective 
+[6] 
+Xu et al., 2010 
+Genetic 
+Algorithm 
+(GA) 
+Energy consumption 
+single-objective 
+[7] 
+Farahnakian et 
+al., 2015 
+PSO 
+SLA, Energy 
+multi-objective 
+[8] 
+Gopu et al., 2023 NSGA III 
+Resource 
+Wastage, 
+Power 
+Usage, 
+Propagation Delay 
+multi-objective 
+[9] 
+Stillwell et al., 
+2012 
+Bin Packing 
+Resource utilization 
+single-objective 
+[10] 
+Tian et al., 2016 Improved PSO 
+SLA, Energy, Migration 
+cost 
+multi-objective 
+[11] 
+Kumar et 
+al., 
+2015 
+PSO 
+Resource Wastage 
+single-objective 
+[12] 
+Mehranzahed et 
+al., 2013 
+Fuzzy-GA 
+Resource utilization 
+single-objective 
+[13] 
+Singh 
+and 
+Chana, 2016 
+Multi-objective GA 
+Energy, 
+Resource 
+wastage, SLA 
+multi-objective 
+
+=== PAGE 21 ===
+13 
+ 
+[14] 
+Barlaskar et al., 
+2016 
+Firefly Algorithm 
+Power consumption 
+single-objective 
+[15] 
+Sundas et al., 
+2022 
+BAT Algorithm 
+Delay, Energy 
+multi-objective 
+[16] 
+Naha et al., 2015 Hybrid PSO-GA 
+Energy, Cost 
+multi-objective 
+[17] 
+ 
+Jangiti 
+et 
+al., 
+2020 
+GSA (Gravitational 
+Search Algorithm) 
+Energy Consumption 
+single-objective 
+[18] 
+Khanafer et al., 
+2016 
+Integer 
+Linear 
+Programming (ILP) 
+Energy, SLA 
+multi-objective 
+The literature above clearly indicates that many authors have attempted many different approaches 
+to the VM placement problem in cloud computing systems. Most of the authors focused on 
+objectives such as energy consumption, load balancing and mitigating SLA violations. Initially, 
+these efforts focused on single objectives and recently the focus has shifted to multi-objectives 
+since cloud environments have many concurrently influencing factors. The indicated methods 
+yield good results for specific approaches, although the authors leave gaps. For many algorithms, 
+either the computation power or scalability is a major factor or they take too long to run. Especially 
+for hybrid methods that are more inherently complicated and difficult to tune efficiently. An even 
+larger problem, is that a lot of the papers assume homogeneous environments, meaning where 
+every server and VM are the same. However, cloud data centers are heterogeneous by nature, 
+which have different machines and workloads. Most works do not account for this, thus limiting 
+the use of these algorithms in real-life scenarios. Furthermore, depending on the work, some do 
+not consider other factors such as migration cost, network usage, or communication delays, which 
+are all critical related metrics. Therefore, there is still room for improvement of the algorithms so 
+that they are also fast, scalable, efficient and take into account the heterogeneity and dynamics of 
+live cloud computing environments. 
+ 
+ 
+
+=== PAGE 22 ===
+14 
+ 
+Chapter 3: System Model & Problem Formulation 
+This chapter presents the system architecture and defines the Virtual Machine (VM) placement 
+problem as a multi-objective optimization problem. In this section, we outline the system model 
+used for simulation and algorithm development. 
+3.1 System Model 
+The system is made up of a number of physical machines (PMs) housed in a data center structure 
+that follows a Fat-Tree topology, representatives of which are core, aggregation and edge layers 
+[1]. Each PM have limited computing resources such as CPU, memory and storage and a set of 
+VMs with varying demands on those resources arrive to be allocated. Each VM must be allocated 
+to a PM, such that the PM does not violate physical capacity and the objectives of the whole system 
+are optimized. The communication cost between VMs allocated to different PMs also has a cost 
+associated in case of a Fat-Tree topology. We have taken 𝑚 number of VMs such 
+as{𝑣1, 𝑣2,𝑣3,… . ,𝑣𝑚} and 𝑛 number of PMs such as {𝑝1, 𝑝2,𝑝3,… . ,𝑝𝑛}. The solution is a binary 
+matrix of 𝑛 ∗ 𝑚 shown in figure 5 [3]. 
+ 
+Figure 5: Sample of solution 
+Using mathematical formulation, we can define it as mentioned in equation (1). This indicates that 
+if a VM is placed in a server, the value assigned is 1 else it is assigned as 0. Figure 5 also shows 
+this alignment that VM1 is placed in PM1, VM2 in PM4, VM3 in PM2 and VM4 and VM5 in 
+PM3 and PM5 is empty. 
+        𝑥𝑖𝑗= {1, 𝑖𝑓 𝑉𝑀 𝑖 𝑖𝑠 𝑝𝑙𝑎𝑐𝑒𝑑 𝑖𝑛 𝑃𝑀 𝑗
+0,                              𝑜𝑡ℎ𝑒𝑟𝑤𝑖𝑠𝑒                                                                               (1) 
+
+=== PAGE 23 ===
+15 
+ 
+We also maintain another data structure of size 𝑛 which shows the active PM status. 1 indicates 
+PM has at least 1 VM assigned and is active else it will be assigned with 0 as mentioned in equation 
+(2). As per figure 5 except for PM5 all other are active PMs. 
+        𝑦𝑗=  {1,                  𝑖𝑓 𝑃𝑀 𝑗 𝑖𝑠 𝑎𝑐𝑡𝑖𝑣𝑒
+0,                              𝑜𝑡ℎ𝑒𝑟𝑤𝑖𝑠𝑒                                                                                (2) 
+3.2 Problem Statement 
+In cloud computing environments, Virtual Machine (VM) placement refers to the strategic 
+allocation of VMs onto available Physical Machines (PMs) within a data center. The goal is to 
+optimize multiple objectives such as minimizing resource wastage, reducing power consumption 
+and lowering inter-VM communication costs all while satisfying resource constraints. This 
+challenge becomes even more critical with the use of Fat-Tree architecture, which, although 
+offering high scalability and fault tolerance, can suffer from congestion and imbalance if VMs are 
+not optimally placed. 
+Figure 4 shows the VM placement problem, where it is shown that proper placement reduces the 
+active PM from 2 to 1, increasing its utilization to 80%. This will eventually help in reducing 
+resource wastage, power consumption and bandwidth usage. VM placement is a complex decision-
+making optimization problem classed as NP-hard. This VMP problem is similar to the bin packing 
+problem where VM can be considered as items and physical machines as bins. The aim is to place 
+the VM in PM similar to the process of filling items inside the bins in an optimized way. Solving 
+it optimally in real-time is computationally impossible. This problem requires approximations, 
+using suitable heuristic and metaheuristic optimization techniques. This research proposes to 
+resolve this problem by producing a hybrid optimization algorithm based on GWO-BPSO under 
+input constraints including the potential of Fat-Tree structured cloud data centers. 
+ 
+Figure 4: Efficient placement of Virtual Machine into servers. 
+
+=== PAGE 24 ===
+16 
+ 
+3.3 Objectives & Problem Formulation 
+This section includes objectives considered for the proposed work, fitness function needed to be 
+optimized and the associated system and resource constraint. The objective is to minimize resource 
+wastage, power consumption and communication cost while maintaining scalability. 
+3.3.1 Objectives 
+In the VM placement problem, many objectives were considered to increase the efficiency of cloud 
+computing. The different objectives are namely power consumption, cost, latency, thermal 
+dissipation, etc. In this paper, minimizing resource wastage, power consumption and bandwidth 
+usage is proposed as primary objective.  
+Resource Wastage 
+The waste of resources can be evaluated using CPU and memory utilization. A threshold is 
+considered to calculate memory and CPU usage since 100% utilization can cause overhead. The 
+resource wastage modelling for 
+ server can be defined in equation (3). 
+  𝑅𝑤= 
+|𝑅𝑗
+𝑐𝑝𝑢−𝑅𝑗
+𝑚𝑒𝑚|+𝜖
+𝑈𝑗
+𝑐𝑝𝑢+𝑈𝑗
+𝑚𝑒𝑚                                                                                                           (3) 
+where, 𝑅𝑗
+𝑐𝑝𝑢and 𝑅𝑗
+𝑚𝑒𝑚 denote the normalized CPU and memory waste remained and 𝑈𝑗
+𝑐𝑝𝑢and 
+𝑈𝑗
+𝑚𝑒𝑚  denotes the normalized CPU and memory usages respectively. 𝜖 is denoted as a very small 
+positive real number which is equal to 0.0001 so that numerator cannot be zero.  
+Equation (4) shows the normalized resource wastage where, 𝑟𝑗
+𝑐𝑝𝑢 and 𝑟𝑗
+𝑚𝑒𝑚 are CPU and memory 
+requirements, respectively. 
+𝑅𝑊𝑛= 𝑀𝑖𝑛∑𝑅𝑤= .5 × ∑
+ y𝒋× (
+𝑅𝑒𝑚𝑗
+𝑐𝑝𝑢
+max(𝑟𝑗
+𝑐𝑝𝑢) +
+𝑅𝑒𝑚𝑗
+𝑚𝑒𝑚
+max(𝑟𝑗
+𝑚𝑒𝑚))
+𝑚
+𝑗=1
+𝑛
+𝑗
+                                       (4) 
+Power Consumption 
+The equation (5) presents a model of the power consumption (𝑃𝑤) of a physical server 𝑗 as a 
+function of its CPU utilization 𝑈𝑗
+𝑐𝑝𝑢. The model assumes that there are two major power states for 
+each server: idle power consumption (𝑃𝑗
+𝑖𝑑𝑙𝑒) and busy power consumption (𝑃𝑗
+𝑏𝑢𝑠𝑦). When the CPU 
+utilization is above zero, in mathematical terms, (𝑃𝑗
+𝑏𝑢𝑠𝑦−𝑃𝑗
+𝑖𝑑𝑙𝑒)× 𝑈𝑗
+𝑐𝑝𝑢 represents the dynamic 
+portion of power consumption increases linearly based on load. The model suggests at zero CPU 
+
+=== PAGE 25 ===
+17 
+ 
+utilization, no VM is running on physical server 𝑗, so the power consumed equal to zero. This 
+represents the types of case where servers can actually be powered down or powered cycled to low 
+power states. 
+𝑃𝑐= {(𝑃𝑗
+𝑏𝑢𝑠𝑦−𝑃𝑗
+𝑖𝑑𝑙𝑒) × 𝑈𝑗
+𝑐𝑝𝑢+ 𝑃𝑗
+𝑖𝑑𝑙𝑒,   𝑖𝑓 𝑈𝑗
+𝑐𝑝𝑢> 0
+0                                                        , 𝑜𝑡ℎ𝑒𝑟𝑤𝑖𝑠𝑒   
+                                                        (5) 
+Similarly, normalized power consumption is defined in equation (6), where 𝑃𝑗
+𝑏𝑢𝑠𝑦 and 
+𝑃𝑗
+𝑖𝑑𝑒𝑎𝑙 represents the power consumption of host 𝑗 when it runs at full capacity and when it is 
+inactive. If the physical host is in an active state, the value of y𝒋 is 1 and 0 otherwise. 
+𝑃𝐶𝑛= ∑
+((𝑃𝑗
+𝑏𝑢𝑠𝑦−𝑃𝑗
+𝑖𝑑𝑒𝑎𝑙)×(∑
+(𝑣𝑗
+𝑐𝑝𝑢×𝒙𝒊𝒋)+𝑃𝑗
+𝑖𝑑𝑒𝑎𝑙
+𝑚
+𝑗=1
+)×y𝒋)
+𝑃𝑗
+𝑚𝑎𝑥
+𝑚
+𝑗=1
+                                                          (6) 
+Communication cost 
+For communication cost calculation we use Traffic Pattern Matrix (TPM) shown in equation (7) 
+eventually calculating data transfer using equation (8). This is a 𝑉𝑀 ∗ 𝑉𝑀 matrix which holds 
+amount of data passed by 𝑉𝑀𝑖 to 𝑉𝑀𝑘. 
+[
+ 
+ 
+ 
+ 0
+11
+⋯
+14
+18
+51
+0
+⋯
+8
+12
+⋮
+⋮
+⋱
+⋮
+⋮
+6
+14
+⋯
+0
+5
+19
+29
+⋯
+63
+0 ]
+ 
+ 
+ 
+ 
+                                                                                                      (7) 
+Hops is define as the number of connections between one server and another which decides the 
+path of data transfer between the VMs. Data transfer is calculated by TPM and the number of hops 
+as shown in equation (8) 
+𝑇= ℎ𝑜𝑝(𝑃𝑀𝑗,𝑃𝑀𝑙) ∗𝑇𝑃𝑀(𝑉𝑀𝑖, 𝑉𝑀𝑘)                                                                             (8) 
+Communication cost can be calculated using equation (9) as, 
+𝐶𝑐= ∑
+∑
+ℎ𝑜𝑝(𝐶𝑗.𝑙)× 𝑇𝑃𝑀(𝑉𝑀𝑖, 𝑉𝑀𝑘)
+𝑚
+𝑘=1
+𝑚
+𝑖=1
+,   𝑖= {1,2, … .. ,𝑚}, 𝑘= {1,2, … .. ,𝑚}     (9) 
+3.3.2 Fitness Function 
+Three objectives are porpsed in this work  namely resource wastage, communication cost and 
+power consumption. In order to achieve an optimal solution, we have used an additive weight 
+
+=== PAGE 26 ===
+18 
+ 
+method to form a single objective function using equation (10).  Our main aim is minimize the 
+value of objective function defined in equation (10). 
+  𝑓= 𝛼× 𝑅𝑤+ 𝛽× 𝐶𝑐+ 𝛾× 𝑃𝑐                                                                                         (10) 
+3.3.3 Constraints 
+In cloud computing, the VM placement problem has requirements based on hard constraints to 
+ensure the solution generated is valid and practically deployable. The hard constraints provide the 
+boundaries that the optimization algorithm must follow and help to differentiate solution validity 
+and infeasibility. The major constraints considered in this work includes are discussed below. 
+Assignment Constraint 
+This constraint ensures that one VM should be placed in one PM only, as defined in equation (11), 
+∑𝑥𝑖𝑗
+𝑛
+𝑗
+= 1 ∀ 𝑖 ∈𝑛                                                                                                           (11) 
+Resource Capacity Constraint 
+Every physical machine (PM) has limited computational resources (CPU, memory, bandwidth and 
+storage). The required resources of all VMs assigned to a PM cannot exceed its available resources. 
+This is being mathematically computed in equation (12), (13) and (14). 
+∑
+𝑥𝑖𝑗× 𝑟𝑗
+𝑐𝑝𝑢
+𝑚
+𝑖
+  ≤ T𝑐𝑝𝑢 ×  𝑦𝑗  ∀ 𝑗 ∈𝑚                                                                           (12) 
+∑
+𝑥𝑖𝑗× 𝑟𝑗
+𝑚𝑒𝑚
+𝑚
+𝑖
+≤ 𝑇𝑚𝑒𝑚 × 𝑦𝑗  ∀ 𝑗 ∈𝑚                                                                          (13) 
+∑
+𝑥𝑖𝑗× 𝑟𝑗
+𝑏𝑤
+𝑚
+𝑖
+   ≤ 𝑇𝑏𝑤 × 𝑦𝑗  ∀ 𝑗 ∈𝑚                                                                            (14) 
+ 
+ 
+ 
+ 
+ 
+ 
+
+=== PAGE 27 ===
+19 
+ 
+Chapter 4: The Proposed 
+This chapter presents the methodology adopted to address the VM placement problem in cloud 
+data centers. It introduces the hybrid GWO-BPSO algorithm, detailing its structure, behavior and 
+integration strategy. The following sections explain the foundational algorithms and the proposed 
+hybrid approach in depth. 
+4.1 Grey Wolf Optimization  
+The Grey Wolf Optimizer (GWO), is a metaheuristic nature-inspired algorithm that imitates the 
+social hierarchy and hunting behavior of grey wolves in nature. GWO was first proposed in 2014 
+[19]. In GWO, the leadership hierarchy of a pack of wolves is used such as alpha, beta, delta and 
+omega wolves to guide the optimization problem. The three best wolves in the GWO population 
+are called alpha as best, beta as second best and delta as third best, while all the remaining wolves 
+follow them in the search for the optimal solution. This hierarchy also helps the GWO algorithm 
+maintain interaction with the search space and specializes in exploration. The process is defined 
+in figure 6. 
+ 
+Figure 6: Process flow of GWO 
+
+=== PAGE 28 ===
+20 
+ 
+The dynamics of grey wolves hunting behavior consists of encircling the prey, hunting and 
+attacking that are all mathematically modelled to update the positions of the search agents. In 
+GWO, the wolves updated their positions based on the positions observed from the alpha wolves, 
+beta wolves and delta wolves using vector equations. The way the wolves updated their position 
+is similar to a balance between exploration and exploitation as mentioned in equation (15), (16) 
+and (17) allowing the algorithms to efficiently search for global optima in a complex search space. 
+The mathematical formulation of GWO includes the following steps: 
+Encircling Prey 
+𝐷 =  |𝐶⃗× 𝑋𝑝𝑟𝑒𝑦 − 𝑏𝑖𝑛𝑚𝑎𝑡𝑡|  
+𝑋 = 𝑋𝑝𝑟𝑒𝑦 − 𝐴⃗× 𝐷                                                                                                       (15) 
+Where 𝑏𝑖𝑛𝑚𝑎𝑡𝑡 means current position of a wolf, 𝑋𝑝𝑟𝑒𝑦 refers position of the prey. The parameter 
+𝐴⃗ and 𝐶⃗ are the coefficients that control exploration and exploitation, defined in equation (16).  
+𝐴⃗=  2𝑎⃗× 𝑟1⃗⃗⃗− 𝑎⃗          𝐶⃗= 2 × 𝑟2⃗⃗⃗⃗                                                                                 (16) 
+Here, 𝑎⃗ decreases linearly from 2 to 0 over iterations and 𝑟1⃗⃗⃗ and 𝑟2⃗⃗⃗⃗ are random numbers in [0, 1]. 
+Position Update Using Alpha, Beta and Delta 
+𝐷𝛼= |𝐶𝛼
+⃗⃗⃗⃗⃗× 𝑋𝛼− 𝑏𝑖𝑛𝑚𝑎𝑡𝑡|  
+𝑋1 = 𝑋𝛼−𝐴⃗× 𝐷𝛼  
+𝐷𝛽= |𝐶𝛽
+⃗⃗⃗⃗⃗× 𝑋𝛽− 𝑏𝑖𝑛𝑚𝑎𝑡𝑡|  
+𝑋2 = 𝑋𝛽−𝐴⃗× 𝐷𝛽  
+𝐷𝛿= |𝐶𝛿
+⃗⃗⃗⃗⃗× 𝑋𝛿− 𝑏𝑖𝑛𝑚𝑎𝑡𝑡|  
+𝑋3 = 𝑋𝛿−𝐴⃗× 𝐷𝛿  
+𝑏𝑖𝑛𝑚𝑎𝑡_𝑛𝑒𝑤𝑡=
+𝑋1+𝑋2+𝑋3
+3
+                                                                                                 (17) 
+
+=== PAGE 29 ===
+21 
+ 
+GWO offers a better trade-off between exploration and exploitation largely due to its linearly-
+decreasing 𝑎, which allows for exploration in the earlier iterations and focuses on exploitation in 
+later iterations. Still, GWO can be slower in converging in certain multimodal spaces where 
+complexity abounds and can also experience problems with premature convergence in the presence 
+of misleading local optima in the solution space. Nevertheless, where many optimization tasks are 
+concerned, GWO performs well due to its previous experiences with leadership structure and 
+adaptability. 
+4.2 Binary Particle Swarm Optimization  
+Binary Particle Swarm Optimization (BPSO) is a variation of the classical Particle Swarm 
+Optimization (PSO) algorithm, specially designed to solve discrete binary optimization problems 
+[3]. In a standard PSO, a swarm of particles moves around in a continuous search space. BPSO 
+takes the basic particle swarm concept and applies it to a binary search space where a particle's 
+position is represented by binary values 0 or 1. This makes BPSO appropriate for combinatorial 
+problems like feature selection, task scheduling and VM placement in cloud computing. 
+The mathematical formulation of BPSO includes 
+Velocity Update 
+𝑣𝑒𝑙𝑡= 𝜔× 𝑣𝑒𝑙𝑡+ 𝑐1 × 𝑟1 × (𝑝𝑏𝑒𝑠𝑡𝑡−𝑏𝑖𝑛𝑚𝑎𝑡𝑡)+ 𝑐2 × 𝑟2 × (𝑔𝑏𝑒𝑠𝑡−𝑏𝑖𝑛𝑚𝑎𝑡𝑡)             (18) 
+Here 𝜔 as the inertia weight to calculate velocity, 𝑐1and 𝑐2 as a random value range [0,1]. In BPSO, 
+the binary position vector and the velocity vector values are used. The velocity, however, in BPSO, 
+does not change the position as in continuous PSO. The velocity obtained using equation (18) is 
+then passed through a sigmoid function for mapping it to [0,1]. BPSO does this to perform 
+exploration and exploitation in a straightforward manner in binary search space. 
+The velocity and position update equations in Binary Particle Swarm Optimization were inspired 
+from Particle Swarm Optimization mentioned in equation (18) in discreate solution as binary 
+matrix. The velocity utilizes cognitive and social component updates which is the particle's best 
+position 𝑝𝐵𝑒𝑠𝑡 and the global best position 𝑔𝐵𝑒𝑠𝑡. The process flow is shown in figure 7. 
+
+=== PAGE 30 ===
+22 
+ 
+ 
+Figure 7: Process flow of BPSO 
+The updated velocity for each bit is passed through a sigmoid function and goes through position 
+update as given in equation (19): 
+𝑥𝑖𝑗= {1, 𝑖𝑓 𝑠𝑖𝑔𝑚𝑜𝑖𝑑(𝑣𝑒𝑙𝑡𝑖𝑗>  𝜃)
+0,                           𝑜𝑡ℎ𝑒𝑟𝑤𝑖𝑠𝑒                                                                                      (19) 
+BPSO is recognized for its simplicity, rapid convergence and the requirement for few control 
+parameters. BPSO uses binary space well for finding solutions and has effective properties when 
+searching solutions for a problem such as VM placement where an optimal solution with binary 
+solutions. One issue of BPSO is the chances to get stuck in local optima, especially in high 
+dimensionality search spaces or with particles that lack diversity. This highlights the importance 
+of maintaining exploration ability, which is often achieved by mutant or hybridization. 
+4.3 Hybrid GWO-BPSO  
+The hybrid GWO-BPSO algorithm was created to address the problems associated with Grey Wolf 
+Optimization (GWO) and Binary Particle Swarm Optimization (BPSO) individually by merging 
+
+=== PAGE 31 ===
+23 
+ 
+the strengths of each into one combined algorithm focused on the VM placement problem for cloud 
+data centers. GWO is good at exploring the total search space because it uses a leadership hierarchy 
+as well as a hunting mechanism simulating nature thus prompting the algorithm to cover more of 
+the search space. The GWO can sometimes limit its ability in individual exploration in later 
+iterations of the algorithm, which causes slow convergence or a premature stagnation of the GWO.  
+In contrast, BPSO is able to exploit a search space well by converging quickly in the good regions, 
+but will likely get stuck in local optima because it does not provide a general exploratory search. 
+The hybridization of GWO and BPSO is an attempt to leverage the general exploratory search of 
+GWO and the accuracy of exploitative search of BPSO into one algorithm. It allows a good general 
+searching for the combination of resource-aware VM placement and communication-aware VM 
+placement and find a near-optimal or optimal placement of VMs. The combination of GWO and 
+BPSO in the hybrid model is determined by dynamic thresholds, which govern the setting of the 
+switching mechanism. Initially, the population is evolved using GWO, providing a broad search 
+of the solution space. If after the specified number of iterations considered as µ_𝑙𝑖𝑚𝑖𝑡, the solution 
+cannot improve, the algorithm switches to BPSO where velocity and position updates further refine 
+the placement configurations using 𝑔_𝑏𝑒𝑠𝑡 from the best-performing wolf.  
+If the search suffers further stagnation i.e. in excess of 𝜃_𝑙𝑖𝑚𝑖𝑡, the self_mutate() method is used 
+to randomize the population by applying random changes. The hybrid model utilizes the 
+integration of GWO and BPSO to move between different steps of the optimization landscape, 
+building on the outcome of each phase in order to improve both convergence and diversity. 
+4.3.1 Algorithm 
+The behavioral basis of GWO-BPSO is founded on its adaptive search. Starting with GWO, the 
+search process begins with a chain of command, the alpha, beta and delta wolves lead the search 
+space and influence the position of the rest. At this stage, the collective population moves all 
+collectively and avoiding local optima, moving towards the regions of good fitness. If successive 
+iterations is unable to produce better fitness value and limited by counter 𝜇 the behavior of GWO-
+BPSO will continue based on BPSO. At this stage, every individual behaves like a particle and 
+changes its velocity based on its previous personal best 𝑝_𝑏𝑒𝑠𝑡 and the best absolute global 
+position 𝑔_𝑏𝑒𝑠𝑡 found by the population at this stage. The behavior at this stage is beginning to 
+
+=== PAGE 32 ===
+24 
+ 
+move from collective exploration, to aggressive local exploitation, which can decrease the 
+diversity of the current candidate solutions. 
+Algorithm: Hybrid GWO-BPSO 
+Input: 𝑴𝒂𝒙_𝒊𝒕𝒆𝒓𝒂𝒕𝒊𝒐𝒏𝒔, 𝑷𝒐𝒑𝒖𝒍𝒂𝒕𝒊𝒐𝒏_𝒔𝒊𝒛𝒆, 𝝁_𝒍𝒊𝒎𝒊𝒕, 𝜽_𝒍𝒊𝒎𝒊𝒕 
+Output: Best solution (𝑨𝒍𝒑𝒉𝒂) 
+1 
+Initialize population (𝑤𝑜𝑙𝑣𝑒𝑠) randomly 
+2 
+Evaluate fitness of each wolf 
+3 
+Identify 𝐴𝑙𝑝ℎ𝑎, 𝐵𝑒𝑡𝑎, 𝐷𝑒𝑙𝑡𝑎 based on fitness 
+4 
+Set 𝜇 =  0, 𝜃 =  0, 𝑖𝑡𝑒𝑟𝑎𝑡𝑖𝑜𝑛 =  1 
+5 
+While (𝑖𝑡𝑒𝑟𝑎𝑡𝑖𝑜𝑛 ≤ 𝑀𝑎𝑥_𝑖𝑡𝑒𝑟𝑎𝑡𝑖𝑜𝑛𝑠) 
+6 
+    Update parameters 𝑎, 𝐴 and 𝐶 
+7 
+    For each wolf 
+8 
+        Update position using GWO formula 
+9 
+        Evaluate new fitness 
+10 
+        If (new fitness < previous fitness) 
+11 
+             Update 𝐴𝑙𝑝ℎ𝑎, 𝐵𝑒𝑡𝑎, 𝐷𝑒𝑙𝑡𝑎 hierarchy 
+12 
+             Set 𝜇 =  0 
+13 
+        Else 
+14 
+             𝜇 =  𝜇 +  1 
+15 
+         If (𝜇 >  𝜇_𝑙𝑖𝑚𝑖𝑡) 
+16 
+             Update velocity and position using BPSO taking 𝐴𝑙𝑝ℎ𝑎 as 𝑔_𝑏𝑒𝑠𝑡 
+17 
+             Evaluate new fitness 
+18 
+             If (new fitness < previous fitness) 
+19 
+                   Update 𝑝_𝑏𝑒𝑠𝑡 and 𝑔_𝑏𝑒𝑠𝑡 
+20 
+                   𝜇 =  0 
+21 
+             Else 
+22 
+                    𝜃 =  𝜃 +  1 
+23 
+              If (𝜃 ≥ 𝜃_𝑙𝑖𝑚𝑖𝑡) 
+24 
+                    Apply self_mutate() on current solutions 
+25 
+                    If mutated solution is better 
+26 
+                          Replace old solution 
+27 
+                          Reset 𝜇 and 𝜃 
+28 
+                     Else 
+29 
+                          Keep old solution  
+30 
+     Increment iteration 
+31 
+Return 𝐴𝑙𝑝ℎ𝑎 as best solution found 
+
+=== PAGE 33 ===
+25 
+ 
+A self-mutation mechanism adds additional adaptability. If the BPSO phase does not produce any 
+true improvements within a defined stagnation threshold 𝜃_𝑙𝑖𝑚𝑖𝑡, a random mutation mechanism 
+is assigned. This mutation process will rearrange the VM's position, to a max of 𝑝𝑚 ×  2 times. 
+The goal of this mutation is to reintroduce diversity to the population to escape local minima. Once 
+any mutated solution produces better performance, the mutation loop will terminate earlier for 
+computational efficiency. This multi-stage behavior from GWO to BPSO to self-mutation, ensures 
+that the algorithm won't stop early and can adaptively react to the underlying landscape of the 
+objective function. 
+4.3.2 Flowchart Explanation 
+The figure 8 shows the operation of the hybrid GWO-BPSO and its dynamic flow of control. The 
+operational procedure begin with a random initialization of population and evaluation of the fitness 
+of each particle. The top three fitness values of the particles determine alpha, beta and delta wolves. 
+After that, control goes to the GWO phase where the particles will update position based on GWO 
+distance equations with 𝐴, 𝐶 and a values. Then, the new fitness function is evaluated; if the new 
+fitness is better than previous fitness, counter values are reset to zero. If it is not better, then the 
+value of the 𝜇 becomes incremented. When the value of 𝜇 becomes greater than 𝜇_𝑙𝑖𝑚𝑖𝑡, the flow 
+transitions to the BPSO phase where velocity and binary position are updated based on inertia and 
+acceleration coefficients. 
+When stagnation continues for an extended period of time, determined by the level of stagnation 
+according to the 𝜃 counter, the 𝑠𝑒𝑙𝑓_𝑚𝑢𝑡𝑎𝑡𝑒() function is invoked to introduce randomized 
+modifications into the current best solution(s). If any of the modified solutions had improved 
+fitness, the best solution will be updated and the counters will be reset. If none of the new mutations 
+are improved, the flow chart will continue to the GWO phase, or just continue with more iterations 
+of BPSO. The flowchart summarizes a multi-phased optimization approach with GWO and BPSO 
+as complementary performance modes, where the transitions between modes are contingent upon 
+performance and conditionally activated to achieve convergence while maintaining a diversity of 
+potential solutions. 
+
+=== PAGE 34 ===
+26 
+ 
+ 
+Figure 8: Process flow of Hybrid GWO-BPSO Algorithm 
+ 
+4.3.3. Advantages 
+The main advantage of GWO-BPSO hybrid is its capability of balancing between exploration and 
+exploitation, an important aspect of multi-objective optimization problems like VM placement. It 
+provides a self-adaptive algorithm where the exploration or exploitation behavior can dynamically 
+
+=== PAGE 35 ===
+27 
+ 
+adapt to fit the search progress and help the GWO-BPSO avoid slow convergence behavior from 
+GWO and premature convergence from BPSO. The self-mutation feature of GWO-BPSO provides 
+an improved mutative ability for escaping local optimum and enables an improved global search 
+capability. This allows the control of computational effort and avoids relying on a single 
+optimization approach. 
+Balanced Exploration and Exploitation 
+The hybrid approach employs the ability of the GWO to search globally i.e. exploration and the 
+ability of the BPSO to refine quickly called exploitation, which allows the algorithm to converge 
+on optimal solutions better. 
+Reduced Premature Convergence   
+The algorithm can change to the BPSO from stagnation. Additionally, with self -mechanism of 
+mutation, the algorithm is not stuck in local optima and maintain population diversity. 
+Improved Multi-objective Optimization 
+The hybrid model can find better trade-offs of multiple objectives. In this paper it contributed on 
+reducing power usage, resource wastage and communication cost, in VM placement problems 
+ensuring increase in resource utilization effectively. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+=== PAGE 36 ===
+28 
+ 
+Chapter 5: Performance Evaluation 
+5.1 Environment & Tools 
+Both the GA-based and the PSO-based computation offloading models were implemented using 
+Python, this is mainly because, it is versatile and has plenty of libraries that provide a sound model 
+to complete the simulation and analyze the results. The implementation was done using Google 
+Colab, which is a cloud-based platform that is free to use, provides access to computing resources 
+such as GPUs and allows for extensive simulations. The code for this implementation is uploaded 
+in Github [20]. 
+The experiments were based on some of the most important Python libraries that are crucial to 
+scientific computing in Python. NumPy was a very important library for utilizing arrays and 
+matrices and fast mathematical calculations, both of which are elementary actions in the encoding 
+and decoding of VM placements. Matplotlib was employed to create plots to illustrate convergence 
+behavior, parameter sensitivity and fitness evolution, which was helpful to see the algorithm's 
+degree of stability. Pandas was used to provide structure to the data, allowing the VM 
+configurations and allocations to be handled efficiently over numerous iterations and multiple 
+population sets. 
+Additionally, SciPy was added for more optimization conveniences and statistical analysis. The 
+random library facilitated the stochastic aspects of the heuristics by implementing controlled 
+randomness from exploration, mutation and initialization. Custom modules were designed to 
+create the hybrid GWO-BPSO architecture to create switching logic, adaptive exploration-
+exploitation control of GWO and BPSO, customized self-mutation routines which included 
+threshold limits of self mutation. 
+This study compares the proposed hybrid algorithm with several traditional heuristic methods, 
+namely First Fit Decreasing (FFD), Best Fit, Worst Fit and Random Allocation (RA). These 
+algorithms are widely recognized for their simplicity and quick decision-making, which makes 
+them suitable for solving basic allocation problems. However, they are generally not well-
+equipped to handle complex, multi-objective optimization tasks such as VM placement in dynamic 
+cloud environments. 
+
+=== PAGE 37 ===
+29 
+ 
+FFD sorts virtual machines in descending order of their fitness value and places each one into the 
+first physical machine that has sufficient capacity. Best Fit attempts to utilize space more tightly 
+by assigning a VM to the server with the least remaining capacity that still fits the VM. On the 
+other hand, Worst Fit distributes load by placing the VM in the server with the most available 
+space. RA, as the name implies, allocates VMs to physical machines randomly, without 
+considering resource efficiency or optimization. While these heuristics offer baseline performance, 
+they are often outperformed by advanced metaheuristic techniques in large-scale, constraint-driven 
+scenarios like those seen in cloud data centers. 
+5.2 Parameter Settings 
+This section outlines the configuration details used for simulation, including the specifications of 
+virtual machines (VMs), physical servers and algorithm's key parameters. These settings serve as 
+the foundation for evaluating VM placement under different scenarios. 
+5.2.1 Server’s Specification 
+The physical servers used, based on data center specifications, had high-resource configurations 
+to support a diversity of VM sizes. Each server was characterized by a CPU power rating of 
+2000 −10,000 𝑀𝐼𝑃𝑆, 4 −32 𝐺𝐵 RAM, bandwidth ratings of 1 −10 𝐺𝑏𝑝𝑠 and network storage 
+of up to 1 𝑇𝐵. This range enables the testing of how well the algorithm manages the load across 
+heterogeneous servers while factoring in communication costs in fat-tree topologies. Table 3 has 
+specify the server specification used for this experiment. 
+Table 3. Server Specifications 
+Parameters 
+Values 
+CPU 
+6000 MIPs 
+Memory 
+8GB 
+Max Power 
+215 kWh 
+Idle Power 
+162 kWh 
+
+=== PAGE 38 ===
+30 
+ 
+5.2.2 GWO Parameters 
+Grey Wolf Optimization was tuned with appropriate parameters for the discrete search spaces such 
+as VM placement. A population size of 50 agents (wolves) was maintained as a compromise 
+between computational time and diversity of potential solutions. The total number of iterations is 
+taken as 200 for this experiment. GWO is structured as 𝐴𝑙𝑝ℎ𝑎, 𝐵𝑒𝑡𝑎, 𝐷𝑒𝑙𝑡𝑎 and 𝑂𝑚𝑒𝑔𝑎 and 
+throughout the optimization the level of influence each of these agents had on an individual would 
+change dynamically as the control parameter 𝐴 was reduced to promote a gradual shift from 
+exploration to exploitation phase. This is controlled by 𝑎 value which decreases linearly over 
+iterations to maintain the balance of trade-off. Control parameters of algorithms is mentioned in 
+Table 4. 
+Table 4. Values of the Hybrid algorithm and control parameters 
+Parameters 
+Values 
+Maximum Iterations 
+200 
+Population 
+60 
+Number of VMs 
+60 
+Number of Pods 
+4 
+Number of PMs 
+16 
+α, β, γ 
+0.33 
+a 
+Linearly decreasing from 2 to 0 
+µ limit 
+15 
+This slow change allows an assessment of many different positions first in GWO and then 
+subsequently will be able to improve the overall population of the best-found solution. However, 
+
+=== PAGE 39 ===
+31 
+ 
+since GWO tends to settle in local optimum as it converges, hybridization and mutate methods 
+will need to happen right away again in the population at that point to regain diversity. 
+5.2.3 BPSO Parameters 
+We used the same population size of 50 and 200 iterations for the BPSO component of the hybrid, 
+to keep benchmarking consistent for the algorithm comparison. The inertia weight 𝜔 was taken as 
+0.5. The acceleration coefficients  𝑐1and 𝑐2, were set at 1.5 each, providing equal weight to both 
+global and personal best influence. Table 5 shows the BPSO’s values. 
+Table 5. Values of the BPSO and control parameters 
+Parameters 
+Values 
+𝜃_𝑙𝑖𝑚𝑖𝑡 
+5 
+𝜔 
+0.5 
+𝑐1 
+1.5 
+𝑐2 
+1.5 
+The parameter setting allows for convergence onto some operational placement configurations and 
+enough randomness exists so as to avoid being placed into shallow optima. We then altered the 
+particle velocities and position updates of the binary space by splitting them into two sigmoid 
+transformations for positional probabilistic changes. Together these parameters should ensure that 
+BPSO is able to operate safely with the GWO and converge to even better solutions through more 
+exploiting, especially while relying on previously found solutions in the GWO phase. 
+5.2.4 Self-mutate Parameters 
+To prevent premature convergence and address stagnation, a self -mutation mechanism was 
+introduced with two threshold controls. The first, µ_𝑙𝑖𝑚𝑖𝑡, was set at 10, beyond which the 
+algorithm initiates a switch to BPSO to further refine solutions. The second, 𝜃_𝑙𝑖𝑚𝑖𝑡, was set at 
+20; upon crossing this threshold, the 𝑠𝑒𝑙𝑓_𝑚𝑢𝑡𝑎𝑡𝑒() function is activated. This function 
+introduces randomized alterations to the current population to revive exploration. It runs up to 𝑛 ∗
+ 2 times, providing multiple perturbations while allowing early stopping if a significantly better 
+solution is encountered mid-run. 
+
+=== PAGE 40 ===
+32 
+ 
+The rationale behind these thresholds is to preserve a strong balance between convergence and 
+diversity. If neither GWO nor BPSO shows improvement within defined iterations, mutation acts 
+as a rescue mechanism by shaking the solution space. The adaptive nature of mutation and early 
+stopping ensures computational resources are not wasted while improving the chances of escaping 
+local minima. This makes the overall hybrid approach more resilient and effective for dynamic 
+environments like cloud VM placement. 
+5.3 Result and Analysis 
+In this section, the result of varying conditions and environments has been set and experiments are 
+conducted for understanding the effectiveness of the proposed algorithm with respect to other 
+traditional metaheuristic and heuristic approaches. 
+5.3.1 Convergence Comparison  
+Figure 9 represents the convergence behaviour of the individual and hybrid optimization methods 
+used in this study. Each sub-figure provides valuable insight into how the fitness value changes 
+from generation to generation, ultimately showcasing evidence of the effectiveness of the hybrid 
+method for Virtual Machine (VM) placement problem. 
+ 
+Figure 9: (a) Convergence graph of BPSO (b) Convergence graph of GWO (c) Convergence graph of Hybrid GWO-
+BPSO (d) Comparison graph of convergence of Hybrid GWO-BPSO with BPSO and GWO 
+
+=== PAGE 41 ===
+33 
+ 
+In contrast, Figure 9(a) presents the convergence behavior of Binary Particle Swarm Optimization 
+(BPSO). Unlike GWO, BPSO exhibits a more gradual but consistent decrease in fitness value over 
+the iterations. The algorithm continues to optimize until approximately the 70th iteration, after 
+which the fitness value stabilizes. This slower convergence is attributed to BPSO’s reliance on 
+swarm intelligence and its velocity-position update mechanism, which fosters exploitation over 
+exploration. While this behavior aids in fine-tuning, it also increases the likelihood of the algorithm 
+getting trapped in local minima, especially in the absence of a mechanism to re-diversify the 
+search. 
+The hybridization process, shown in Figure 9(c) through an integration of GWO and BPSO, has 
+advantages as seen in the graph. The curve begins with a downward drop that is steep, somewhat 
+like GWO, because the curve is able to benefit from the exploration capability of GWO. At some 
+point, the control switches to BPSO as defined by its internal parameters µ_𝑙𝑖𝑚𝑖𝑡 and 𝜃_𝑙𝑖𝑚𝑖𝑡. We 
+see BPSO ensured that the best region found by GWO was exploited deeply. The result is, as seen 
+in the figure, BPSO was able to continue to reduce the fitness value well beyond the point at which 
+BPSO or GWO was stalling. Convergence continues up to the 90th iteration and has the lowest 
+final fitness value, which shows the hybrid model has overcome the restrictions imposed by each 
+original model individually. 
+In the end, Figure 9(d) provides a great way to evaluate the different performances of all three 
+methods, the GWO in green, BPSO in blue and Hybrid GWO-BPSO in red, by plotting the 
+convergence curves for all three methods. From inspection of the figure, it is clear that the Hybrid 
+algorithm provides a better low fitness value in most iterations. It is important to note also that 
+GWO converged well in speed, while BPSO performed well in the long run compared to GWO, 
+while the Hybrid algorithm performed better than both GWO and BPSO in both convergence speed 
+and final solution. Since the hybrid combines the exploration ability of GWO with the exploitation 
+ability of BPSO, it provides a feasible and balanced optimization strategy, deeming it most 
+applicable for complex multi-objectives, such as effective VM placement in tree-based cloud 
+architectures. 
+5.3.2. Impact of Increasing Number of VMs  
+Figure 10 compares five diverse VM placement methods, Hybrid GWO-BPSO, BPSO, GWO, 
+FFD, Best-Fit, Worst-Fit and RA (Random Allocation). The fitness value is compared for a range 
+
+=== PAGE 42 ===
+34 
+ 
+of VM workloads from 80 to 200 VMs, assuming that each physical machine has a 6000 𝑀𝐼𝑃𝑆 
+CPU and 8 𝐺𝐵 RAM of homogeneous physical machines, as mentioned in section 5.2.2. The 
+correlation between CPU and memory usage is +0.85, ensuring a realistic reflection of workloads. 
+The communication cost is calculated from the TPM matrix and randomly designed outgoing 
+traffic between VMs, simulating real-world cloud traffic scenarios. 
+ 
+Figure 10: Comparison of fitness values by increasing number of VMs 
+As seen in Figure 10, Hybrid GWO-BPSO is consistently lower in fitness value than the other 
+methods, demonstrating not only its ability to optimize the communication-aware placement 
+approach, but also to be better at energy-aware usage of resources. Specifically, for 200 VMs, we 
+see again the hybrid approach having the lowest fitness value, further proving scalability and 
+robustness of the approach. The benefits of the GWO exploration and the local search capabilities 
+of BPSO, cause the hybrid method to be capable of finding a balance between exploration and 
+improvement to the quality of the solution resulting from local refinement. 
+On the other hand, the standalone metaheuristic algorithms, GWO and BPSO, show moderate 
+performance. GWO is relatively better at low VM numbers example 40 and 80 VMs a result of 
+quickly converging in iterations, however it suffers at higher VM counts because of its premature 
+convergence. BPSO generates consistently, compared to the hybrid method displaying mildly 
+higher fitness values and is especially evident in the mid-range loads example 120 and 160 VMs. 
+
+=== PAGE 43 ===
+35 
+ 
+This suggests BPSO's better exploitation mode, however, without the means for exploration, in 
+complicated or dynamic scenarios, it suffers. 
+FFD, a classical heuristic method, consistently maintains good fitness values in all the scenarios 
+showcasing the deficiencies of the approach with respect to communication-aware constraints and 
+complex objective functions. FFD and Best-Fit was faster but did not adapt to other solutions under 
+increased loads of VMs available, leading to inadequate placements when originating from space 
+where fewer VMs were present onward. RA and Worst-Fit was giving the worst result among all 
+the methods. The random nature of RA while allocation based on larger space found by Worst Fit 
+method created really poor resource utilization and could not reduce communication costs, it was 
+obvious the approach maintained the highest fitness values across all of the consistently counted 
+VMs. 
+Overall, figure 10 demonstrates the capabilities of the proposed GWO-BPSO hybrid approach 
+whereby adaptively aligning the relative tasks undertaken with increasing workloads, as well as 
+improving all placement decisions through the use of exploration and exploitation. Overall, the 
+practical applicability is validated for energy-efficient and communication-aware VM placement 
+in cloud datacenters. 
+5.3.3. Impact of Increasing Number of PMs  
+Figure 11 shows a comparison of the VM placement performance of five algorithms, Hybrid 
+GWO-BPSO, BPSO, GWO, FFD, Best-Fit, Worst-Fit and RA, when the number of PODs is 
+altered in a range from four to ten. Increasing the number of PODs, will increase the number of 
+physical machines (PMs). In this experiment we placed 60 VMs in the hybrid method, BPSO and 
+GWO while increasing the scale of the infrastructure with the number of available PODs and 
+mapped onto the number of PMs mentioned in table 6. The workload of each VM established a 
+strong positive correlation (+0.85) between CPU and memory utilization and communication costs 
+follow the same methodology as previous experiments.  
+Table 6. Relation between PODs and PMs 
+PODs 
+4 
+6 
+8 
+10 
+Physical Machines (PM) 
+16 
+54 
+128 
+250 
+
+=== PAGE 44 ===
+36 
+ 
+ 
+ 
+Figure 11: Comparison of fitness value by increasing number of PODs 
+From the plots and table, we can see the hybrid GWO-BPSO algorithm produces the least amount 
+of fitness value across all number of POD configurations. For example, at 4 PODs, the hybrid 
+method has the least fitness value of about 0.3 where as RA, Worst Fit, Best Fit and FFD have a 
+much larger value. This shows the hybrid VM placement model can find solutions that further 
+optimize limited resources, within the VM placement solutions, as it reduces communication and 
+energy costs, while maintaining a balance across all entities. 
+While there is an increase in POD count, the overall fitness value increases in all algorithms 
+because the increase is from a larger resource pool and the complexity (and thus communication 
+overhead) of placement decisions is distributed over a greater number of agents. Nevertheless, the 
+hybrid algorithm remains ahead, as expected, while exceeding traditional algorithms like FFD and 
+RA and also independent strategies like GWO and BPSO. For example, at 8 PODs, GWO-BPSO 
+has a fitness value under 0.8, contrasting RA which has a fitness value well above 0.9 making it 
+clear how poor the performance is with RA and random allocation in a larger scale system. 
+Based on the previous analysis, figure 11 clearly shows the scalability and reliability of the Hybrid 
+GWO-BPSO algorithm. Even when the number of PODs and the associated search space increases, 
+the hybrid approach still provides a higher number of optimized placements than the classical 
+heuristics for bin packing and standalone metaheuristics. This demonstrates that the hybrid method 
+
+=== PAGE 45 ===
+37 
+ 
+can be a valuable approach to addressing the real-world, large-scale environments of cloud 
+datacenter operations. 
+5.3.4. Impact of Increasing Population Size  
+This section shows the impact of population size on fitness value for the various VM placement 
+algorithms, which consist of the new Hybrid GWO-BPSO, BPSO, GWO and heuristic algorithms 
+such as FFD, Best-Fit, Worst-Fit and Random Allocation (RA), illustrated in figure 12. As the 
+population size increases from 20 to 100, the Hybrid GWO-BPSO produces lower fitness values 
+across the board, which showcases an overall improvement in solution quality based on better 
+convergence and explosion. 
+ 
+Figure 12: Comparison of fitness value by increasing population size 
+The graph shows that heuristic algorithms such as RA, Worst-Fit and Best-Fit maintain relatively 
+high and almost constant fitness values as they do not improve at any population size and become 
+impacted when moved to different optimization complexities. On the contrary, GWO and BPSO 
+mustered moderate gains with population increase, but none came close to the Hybrid GWO-
+BPSO. The performance trend of the hybrid algorithm illustrated its strengths and shows 
+improvement through larger populations due to being less likely to become trapped in local optima, 
+as the diversity of solution increases for better exploration.  
+
+=== PAGE 46 ===
+38 
+ 
+Chapter 6: Conclusion & Future Scope 
+This section presents the final conclusions derived from extensive experimentation and analysis. 
+Additionally, the future scope of the study is outlined.   
+6.1 Conclusion 
+This work provides insightful information on hybrid GWO-BPSO algorithm for optimizing the 
+VM placement problem present in cloud computing. The proposed hybrid model combines the 
+exploration capabilities of Grey Wolf Optimization and the exploitation strengths of Binary 
+Particle Swarm Optimization to productively and effectively resolve the multi-objective aspect of 
+the VM placement problem. The approach introduced a mutation method for self-mutation to 
+develop a more diverse population while avoiding premature convergence stagnation. The main 
+objective is to reduce resource wastage, power consumption and communication cost. This 
+approach has used the networking structure, i.e. Fat-Tree Architecture, for calculating the 
+communication cost, which provides higher bandwidth and reduces bottlenecks by increasing the 
+number of compounds when moving up the hierarchy. Experimental results has shown better 
+performance of the hybrid GWO-BPSO than the standard GWO and BPSO and heuristic 
+algorithms like FFD, best fit, worst fit and RA under various conditions such as increasing 
+population size, varying number of VMs and changing number of hosts. 
+6.2 Future Scope 
+Although the hybrid GWO-BPSO algorithm showed favorable results, there is still a potential for 
+continued improvement. Future work could include the possibility to complement a workload 
+prediction model or machine learning model for behaviour prediction to guide the optimization 
+algorithm when considering temporary resource consumption. Another aspect to explore could be 
+to incorporate real-time traffic patterns, reactive VM migrations due to the workload changes, or 
+even dynamic behavior with respect to workloads in a live cloud environment. Another 
+improvement could also add reinforcement learning as a new model or applying penalty method 
+to improve the efficiency of the optimization problem. Another improvement can be to hybridize 
+with other metaheuristics, namely such as ACO, ABC, WOA. The combined developments could 
+help provide new possibilities to make the new proposed model more robust, scalable and offer 
+wider application across next-generation cloud systems.Click or tap here to enter text. 
+
+=== PAGE 47 ===
+39 
+ 
+References 
+[1] 
+R. Keshri and D. P. Vidyarthi, “Energy-efficient communication-aware VM placement in 
+cloud datacenter using hybrid ACO–GWO,” SpringerR Keshri, DP VidyarthiCluster 
+Computing, 2024•Springer, Dec. 2024, doi: 10.1007/S10586-024-04623-Z. 
+[2] 
+Shah, M., Rajwar, D., Dehury, J. P. & Kumar, D. VM placement in cloud computing using 
+Nature-Inspired optimization algorithms. In Nature-Inspired Optimization Algorithms for 
+Cyber-Physical Systems (251–282). IGI Global Scientific Publishing. (2025). 
+[3] 
+A. Tripathi, I. Pathak, D. V.-T. C. Journal, and undefined 2018, “Energy efficient VM 
+placement for 
+effective resource utilization 
+using 
+modified binary PSO,” 
+academic.oup.comA Tripathi, I Pathak, DP 
+VidyarthiThe Computer Journal, 
+2018•academic.oup.com, 2018, Accessed: May 06, 2025. [Online]. Available: 
+https://academic.oup.com/comjnl/article-abstract/61/6/832/4643566 
+[4] 
+A. Beloglazov and R. Buyya, "Optimal online deterministic algorithms and adaptive 
+heuristics for energy and performance efficient dynamic consolidation of virtual machines 
+in cloud data centers," Concurrency and Computation: Practice and Experience, vol. 24, 
+no. 13, pp. 1397–1420, 2012. 
+[5] 
+J. Cao, W. Wang, X. Li, Y. Liu, and G. Wang, "A novel energy-efficient resource allocation 
+algorithm based on immune clonal optimization for green cloud computing," Future 
+Generation Computer Systems, vol. 96, pp. 177–185, Jul. 2019. 
+[6] 
+J. Xu, M. Zhao, J. Fortes, R. Carpenter, and M. Yousif, "Autonomic resource management 
+in virtualized data centers using fuzzy logic-based approaches," Cluster Computing, vol. 
+11, no. 3, pp. 213–227, Sep. 2008. 
+[7] 
+F. Farahnakian, T. Pahikkala, P. Liljeberg, J. Plosila, and H. Tenhunen, "Energy-aware 
+VM consolidation in cloud data centers using MadVM," Future Generation Computer 
+Systems, vol. 43–44, pp. 14–26, Mar. 2015. 
+[8] 
+Gopu, A., Thirugnanasambandam, K., AlGhamdi, A. S., Alshamrani, S. S., Maharajan, K., 
+& Rashid, M. (2023). Energy-efficient virtual machine placement in distributed cloud 
+using NSGA-III algorithm. Journal of Cloud Computing, 12(1), 124. 
+
+=== PAGE 48 ===
+40 
+ 
+[9] 
+M. Stillwell, D. Schanzenbach, F. Vivien, and H. Casanova, "Resource allocation 
+algorithms for virtualized service hosting platforms," Journal of Parallel and Distributed 
+Computing, vol. 70, no. 9, pp. 962–974, Sep. 2010. 
+[10] 
+W. Tian, Y. Zhao, Y. Zhong, M. Xu, and C. Jing, "A dynamic and integrated load-    
+balancing scheduling algorithm for cloud datacenters," Cluster Computing, vol. 16, no. 3, 
+pp. 435–449, Sep. 2013. 
+[11] 
+Kumar, D., & Raza, Z. (2015, February). A PSO based VM resource scheduling model for 
+cloud computing. In 2015 IEEE international conference on computational intelligence & 
+communication technology (pp. 213-219). IEEE.  
+[12] 
+Mehranzadeh, A., & Hashemi, S. M. (2013). A novel-scheduling algorithm for cloud 
+computing based on fuzzy logic. International Journal of Applied Information Systems 
+(IJAIS), 5(7), 28-31.  
+[13] 
+S. Singh and I. Chana, "Cloud resource provisioning: survey, status and future research 
+directions," Knowledge and Information Systems, vol. 49, no. 3, pp. 1005–1069, Dec. 
+2016. 
+[14] 
+Barlaskar, E., Singh, Y. J., & Issac, B. (2016). Energy-efficient virtual machine placement 
+using enhanced firefly algorithm. Multiagent and Grid Systems, 12(3), 167-198. 
+[15] 
+Sundas, A., Badotra, S., Alotaibi, Y., Alghamdi, S., & Khalaf, O. I. (2022). Modified Bat 
+Algorithm for Optimal VM's in Cloud Computing. Computers, Materials & 
+Continua, 72(2). 
+[16] 
+R. Naha, S. Garg, D. Georgakopoulos, P. Jayaraman, L. Gao, and R. Ranjan, "Deadline-
+based resource provisioning and scheduling algorithm for scientific workflows in IaaS 
+clouds," IEEE Transactions on Cloud Computing, vol. 6, no. 1, pp. 1–14, Jan.–Mar. 2018. 
+[17] 
+Abdessamia, F., Zhang, W. Z., & Tian, Y. C. (2020). Energy-efficiency virtual machine 
+placement based on binary gravitational search algorithm. Cluster Computing, 23(3), 
+1577-1588. 
+
+=== PAGE 49 ===
+41 
+ 
+[18] 
+Lin, J., Lin, W., Wu, W., Lin, W., & Li, K. (2024). Energy-aware virtual machine 
+placement based on a holistic thermal model for cloud data centers. Future Generation 
+Computer Systems, 161, 302-314. 
+[19] 
+S. Mirjalili, S. Mirjalili, A. L.-A. in engineering software, and undefined 2014, “Grey wolf 
+optimizer,” Elsevier, 2014, Accessed: May 
+06, 2025. [Online]. Available: 
+https://www.sciencedirect.com/science/article/pii/S0965997813001853 
+[20] 
+ “Optimizing VM Placement in Cloud Data Centers Using a Hybrid GWO-BPSO 
+Algorithm” 
+Accessed: 
+June 
+05, 
+2025. 
+[Online]. 
+Available: 
+https://github.com/monali15001/Optimizing-VM-Placement-in-Cloud-Data-Centers-
+Using-a-Hybrid-GWO-BPSO-Algorithm 
+ 
+

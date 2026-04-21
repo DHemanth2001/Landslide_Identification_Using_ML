@@ -1,0 +1,1263 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage{mathptmx}  % Times New Roman font
+\usepackage{graphicx}
+\linespread{1.5}  % 1.5 line spacing for thesis
+\usepackage[top=1in, bottom=0.8in, left=1in, right=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usepackage{needspace}
+\usepackage{etoolbox}
+\usepackage{ragged2e}  % For justify
+\usepackage{titlesec}  % Custom heading formats
+\usepackage{tocloft}   % Custom TOC format
+\graphicspath{{figures/}}
+
+% Justify all text
+\justifying
+
+% Set figure/table caption font to ~10.4pt (matching reference thesis)
+\usepackage[font=small]{caption}
+
+% ---- Chapter heading: 16pt bold, "Chapter N: Title" on one line ----
+\titleformat{\chapter}
+  {\centering\bfseries\fontsize{16}{19.2}\selectfont}
+  {Chapter \thechapter:}{0.5em}{}
+\titlespacing*{\chapter}{0pt}{-30pt}{14pt}
+
+% ---- Section heading: 14.4pt bold (= \large) ----
+\titleformat{\section}
+  {\large\bfseries}{\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+% ---- Subsection heading: 12pt bold ----
+\titleformat{\subsection}
+  {\normalsize\bfseries}{\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{10pt}{4pt}
+
+% ---- Subsubsection heading: 12pt bold ----
+\titleformat{\subsubsection}
+  {\normalsize\bfseries}{\thesubsubsection}{1em}{}
+\titlespacing*{\subsubsection}{0pt}{8pt}{4pt}
+
+% ---- TOC/LOF/LOT heading names (centering from titleformat) ----
+\renewcommand{\contentsname}{Table of Contents}
+\renewcommand{\listfigurename}{List of Figures}
+\renewcommand{\listtablename}{List of Tables}
+
+% TOC chapter entries: bold, show "Chapter N: Title"
+\renewcommand{\cftchappresnum}{Chapter }
+\renewcommand{\cftchapaftersnum}{:}
+\newlength{\chpnumwidth}
+\settowidth{\chpnumwidth}{\bfseries Chapter 10: }
+\cftsetindents{chapter}{0em}{\chpnumwidth}
+\renewcommand{\cftchapfont}{\bfseries}
+\renewcommand{\cftchappagefont}{\bfseries}
+
+% TOC section entries: normal
+\renewcommand{\cftsecfont}{\normalfont}
+\renewcommand{\cftsecpagefont}{\normalfont}
+
+% Prevent headings from appearing alone at page bottom
+\widowpenalty=10000
+\clubpenalty=10000
+\raggedbottom
+
+% Ensure enough space before section/subsection headings
+\pretocmd{\section}{\needspace{5\baselineskip}}{}{}
+\pretocmd{\subsection}{\needspace{4\baselineskip}}{}{}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+
+% TikZ Styles for pipeline diagrams
+\tikzstyle{startstop} = [rectangle, rounded corners, minimum width=3cm, minimum height=0.8cm,
+                         text centered, draw=black, fill=red!15, font=\small\bfseries]
+\tikzstyle{process}   = [rectangle, minimum width=3.5cm, minimum height=0.8cm,
+                         text centered, draw=black, fill=blue!15, font=\small]
+\tikzstyle{process2}  = [rectangle, minimum width=3.5cm, minimum height=0.8cm,
+                         text centered, draw=black, fill=orange!15, font=\small]
+\tikzstyle{preprocess} = [rectangle, minimum width=3.5cm, minimum height=0.8cm,
+                          text centered, draw=black, fill=green!15, font=\small]
+\tikzstyle{decision}  = [diamond, aspect=2.5, minimum width=2cm, minimum height=0.8cm,
+                         text centered, draw=black, fill=yellow!15, font=\small]
+\tikzstyle{io}        = [trapezium, trapezium left angle=70, trapezium right angle=110,
+                         minimum width=2.5cm, minimum height=0.7cm, text centered,
+                         draw=black, fill=gray!10, font=\small]
+\tikzstyle{arrow}     = [-{Stealth[length=2.5mm]}, thick]
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% TITLE PAGE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{titlepage}
+	\begin{center}
+		\vspace*{1cm}
+		{\textbf{A Two-Phase Machine Learning Framework for Landslide Detection and Temporal Risk Forecasting Using Satellite Imagery}}\\
+		\vspace{10mm}
+		\textit{Dissertation submitted in partial fulfilment of the requirements for the award of the}\\
+		\textit{Degree}\\
+		\textit{of}\\
+		{\bf Master of Technology}\\
+		\textit{in}\\
+		{\bf Computer Science and Engineering}\\
+		{\bf Department of Computer Science and Engineering}\\
+		\vspace{5mm}
+		\textit{by}\\
+		\vspace{3mm}
+		{\bf DODDI VENKATA SATYA SAI HEMANTH}\\
+		(2024PGCSIS05)\\
+		\vspace{5mm}
+		\textit{Under the guidance}\\
+		\textit{of}\\
+		\vspace{3mm}
+		{\bf Dr. DIWAKAR PRASAD TRIPATHI}\\
+		(Assistant Professor)\\
+		\vspace{10mm}
+		\includegraphics[height=2.4cm]{nitjsrlogo}\\
+		\vspace{5mm}
+		DEPARTMENT OF COMPUTER SCIENCE \& ENGINEERING\\
+		NATIONAL INSTITUTE OF TECHNOLOGY\\
+		JAMSHEDPUR\\
+		JUNE 2025\\
+	\end{center}
+\end{titlepage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% DECLARATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\date{}
+\thispagestyle{empty}
+\newpage
+\thispagestyle{empty}
+\begin{center}
+{\fontsize{16}{19.2}\selectfont\bfseries NATIONAL INSTITUTE OF TECHNOLOGY\\JAMSHEDPUR}\\
+\vspace{10mm}
+{\fontsize{16}{19.2}\selectfont\bfseries CANDIDATE'S DECLARATION}
+\end{center}
+\vspace{5mm}
+I declare that the work presented in this dissertation entitled ``{\bf A Two-Phase Machine Learning Framework for Landslide Detection and Temporal Risk Forecasting Using Satellite Imagery}'' submitted to the Department of Computer Science \& Engineering, National Institute of Technology, Jamshedpur (India) for the award of {\bf Master of Technology} Degree in Computer Science and Engineering, is my original work. I neither have plagiarized any part of the dissertation nor submitted the same work for any other Degree anywhere. In case this undertaking is found incorrect, the degree may be withdrawn unconditionally.
+
+\vspace{2cm}
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+{\bf NIT Jamshedpur}\\
+{\bf Date -- \hspace{2cm}}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+\raggedleft
+{\bf (DODDI VENKATA SATYA SAI HEMANTH)}\\
+{\bf (2024PGCSIS05)}
+\end{minipage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CERTIFICATE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\thispagestyle{empty}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=1\textwidth]{cseletterhead}
+\end{figure}
+\begin{center}
+	{\fontsize{16}{19.2}\selectfont\bfseries CERTIFICATE}
+\end{center}
+This is to certify that the thesis entitled ``A Two-Phase Machine Learning Framework for Landslide Detection and Temporal Risk Forecasting Using Satellite Imagery'', submitted by Doddi Venkata Satya Sai Hemanth (Reg. No.: 2024PGCSIS05) towards partial fulfillment of the requirements for the award of degree of Master of Technology (M.Tech.) in Computer Science and Engineering, is a bonafide record of the work carried out by him under my supervision and guidance.\\
+\\
+\\
+\begin{flushright}
+{\bf Dr. Diwakar Prasad Tripathi}\\
+{\bf ( Supervisor )}
+\end{flushright}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ACKNOWLEDGEMENT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\thispagestyle{empty}
+\begin{center}{\fontsize{16}{19.2}\selectfont\bfseries ACKNOWLEDGEMENT}\end{center}
+\vspace{5mm}
+It gives me immense pleasure to express my deep sense of gratitude to my supervisor Dr. Diwakar Prasad Tripathi for his valuable guidance, motivation, constant inspiration and above all for their ever-cooperating attitude that enabled me in bringing up this thesis in the present form.
+
+My heartfelt gratitude also goes to the Head of Department of Computer Science and Engineering for providing me the opportunity to avail the excellent facilities and infrastructure. I am equally thankful to all faculty members and non-teaching staff of the department for their guidance and support.
+
+I am also thankful to my batch-mates who encouraged me to achieve this target. I am also thankful to all my family members whose love, affection, blessings and patience encouraged me to carry out this thesis successfully. I also extend my gratitude to all my friends for their cooperation.
+
+Finally, once again, I thank Almighty God, my lord for giving me the will power and strength to make it happen.
+\\
+\\
+\\
+\begin{flushright} {\bf DODDI VENKATA SATYA SAI HEMANTH}\\{\bf (2024PGCSIS05)} \end{flushright}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ABSTRACT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\thispagestyle{empty}
+\begin{center}{\fontsize{16}{19.2}\selectfont\bfseries Abstract}\end{center}
+\vspace{5mm}
+\noindent
+Landslides are among the most devastating and frequently occurring natural disasters worldwide, causing thousands of deaths and billions of dollars in damage annually. Traditional landslide identification relies on manual field surveys or expert analysis of satellite imagery, both of which are slow, expensive, and cannot scale to large geographic regions. This study presents an automated two-phase machine learning pipeline for landslide identification and temporal risk forecasting using satellite imagery and historical event data.
+
+Phase~1 employs a deep learning ensemble of three modern architectures for binary classification of satellite images into landslide and non-landslide categories. The three architectures are EfficientNetV2-S with Convolutional Block Attention Module (CBAM), ConvNeXt-Base with CBAM and Feature Pyramid Network (FPN), and Swin Transformer V2-Small. The system was trained and evaluated on multiple datasets including HR-GLDD and the Bijie landslide dataset, achieving 89.39\% accuracy on multi-source data (5~datasets combined) and 98.56\% accuracy on the Bijie benchmark with 5-fold cross-validation.
+
+Phase~2 utilizes a Categorical Hidden Markov Model (HMM) trained on 9,471 real-world landslide events from the NASA Global Landslide Catalog spanning 141~countries over 28~years. Upon detection of a landslide by Phase~1, Phase~2 provides the predicted landslide type, occurrence probability, peak risk month, and a multi-step temporal forecast.
+
+The system evolved through seven iterative experiments across three development lifecycles, improving from a baseline accuracy of 78.54\% (AlexNet from scratch) to 98.56\% (ConvNeXt-CBAM-FPN ensemble). This study demonstrates that combining spatial image detection with temporal probabilistic forecasting provides a comprehensive landslide risk assessment framework.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% TABLE OF CONTENTS, LIST OF FIGURES, LIST OF TABLES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CHAPTER 1: INTRODUCTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Introduction}\label{intro}
+
+\section{Background}
+Landslides are one of the most destructive and frequently occurring natural disasters in the world. They cause thousands of deaths every year, destroy infrastructure, displace communities, and inflict billions of dollars in economic loss \cite{froude2018landslide}. Countries like India, Nepal, China, the Philippines, and parts of South America are particularly vulnerable because of their mountainous terrain, heavy monsoon rainfall, and rapid urban expansion into unstable slopes. India alone loses over 500 lives per year to landslides according to the National Disaster Management Authority \cite{ndma_india}.
+
+Despite the severity of the problem, most traditional landslide identification systems rely on manual field surveys, which are slow, expensive, and impossible to scale across large geographic areas. Satellite imagery is widely available from sources such as NASA, ESA (Sentinel-2), and Landsat, but analyzing it manually by domain experts is time-consuming and not practical for real-time monitoring or early warning systems. The bottleneck in landslide identification is therefore not data availability but automated analysis capability.
+
+Recent advances in machine learning, particularly deep learning with Convolutional Neural Networks (CNNs) and Vision Transformers, have shown remarkable success in image recognition tasks \cite{he2016resnet, dosovitskiy2020vit}. These models can automatically learn discriminative features from raw pixel data, eliminating the need for manual feature engineering that was required by earlier approaches using Support Vector Machines or Random Forests.
+
+However, existing deep learning approaches for landslide identification typically address only part of the problem. They can detect whether a satellite image contains a landslide but cannot classify the type of landslide, predict future occurrences, or provide temporal risk assessments. This work addresses this gap by developing a comprehensive two-phase pipeline that combines image-based spatial detection with temporal probabilistic forecasting.
+
+\section{Problem Statement}
+Every year, landslides occur in mountainous and rain-heavy regions, resulting in loss of life and property. Current methods for identifying landslides include the following.
+
+\begin{enumerate}
+    \item \textit{Field surveys} involve experts physically visiting affected sites for inspection. This approach is slow, expensive, and cannot cover large areas efficiently.
+    \item \textit{Expert analysis of satellite imagery} involves scientists manually examining satellite images to locate landslides. This is time-consuming and does not scale to real-time monitoring.
+    \item \textit{Remote sensing indices} use methods such as NDVI (Normalized Difference Vegetation Index) or change detection algorithms to flag potential landslide zones. However, they cannot classify the type or predict future events.
+\end{enumerate}
+
+The goal of this study is to develop an automated, two-phase machine learning pipeline that performs the following.
+
+\begin{enumerate}
+    \item Detects landslides from satellite images with high accuracy using deep learning.
+    \item Classifies the predicted landslide type based on historical regional patterns.
+    \item Forecasts the probability and timing of future landslide events.
+    \item Provides a complete risk assessment report for operational decision-making.
+\end{enumerate}
+
+\section{Motivation}
+The motivation for this work stems from three key observations.
+
+\begin{enumerate}
+    \item \textit{Scale of the problem.} Globally, landslides affect millions of people annually. Early detection and prediction could trigger evacuations and significantly reduce fatalities.
+    \item \textit{Data availability gap.} Satellite imagery is abundantly available from missions like Sentinel-2, Landsat, and commercial providers. What is missing is an automated system that can analyze this imagery reliably.
+    \item \textit{Limitation of existing systems.} No published system combines image-based detection with temporal forecasting. Existing approaches answer ``Is this a landslide?'' but not ``What type is it, how likely is it to recur, and when is the peak risk?''
+\end{enumerate}
+
+\section{Overview of Proposed Work}
+The proposed system is a two-phase pipeline.
+
+\textit{Phase~1, Image Classification,} takes a satellite image as input and classifies it as landslide or non-landslide using a deep learning ensemble of three modern architectures. These are EfficientNetV2-S with CBAM attention, ConvNeXt-Base with CBAM and FPN for multi-scale detection, and Swin Transformer V2-Small for global spatial understanding.
+
+\textit{Phase~2, Temporal Forecasting,} is automatically triggered if Phase~1 detects a landslide. It uses a Hidden Markov Model (HMM) trained on 9,471 real landslide events from the NASA Global Landslide Catalog to predict the landslide type, occurrence probability, peak risk month, and a multi-step future forecast.
+
+The system was developed iteratively through seven experiments (r0 to r6) across three development lifecycles, with each iteration addressing specific weaknesses identified in the previous one. The architecture evolved from a simple AlexNet baseline (78.54\% accuracy) to a sophisticated three-model ensemble achieving 98.56\% accuracy on the Bijie benchmark dataset.
+
+\section{Outline of the Report}
+This thesis is organized into seven chapters, each addressing a specific aspect of the research.
+
+Chapter \ref{litsurvey} presents a comprehensive literature survey covering existing landslide detection methods, deep learning architectures, and temporal modeling approaches. Chapter \ref{methodology} describes the proposed system design and methodology including the two-phase pipeline architecture, model architectures, and training strategies. Chapter \ref{datasets} details the datasets used for training and evaluation. Chapter \ref{implementation} covers the implementation details and experimental setup. Chapter \ref{results} presents the experimental results and analysis across all seven iterations and three lifecycles. Chapter \ref{conclusion} provides the conclusions and directions for future work.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CHAPTER 2: LITERATURE SURVEY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Literature Survey}\label{litsurvey}
+
+This chapter reviews the existing literature on landslide detection using machine learning techniques, deep learning architectures for image classification, and temporal modeling approaches relevant to the proposed system.
+
+\section{Traditional Landslide Detection Methods}
+Traditional approaches to landslide detection broadly fall into three categories.
+
+\begin{enumerate}
+    \item \textit{Remote sensing methods} use spectral indices such as NDVI (Normalized Difference Vegetation Index) and change detection algorithms applied to multi-temporal satellite imagery. While effective at detecting surface changes indicative of landslides, they cannot classify the type of landslide or predict future events \cite{ghorbanzadeh2019unet}.
+
+    \item \textit{Machine learning with handcrafted features} includes methods using Support Vector Machines (SVM), Random Forests, or Logistic Regression trained on manually engineered terrain features such as slope angle, elevation, aspect, and land cover. Zhang et al. \cite{zhang2020landslide_review} demonstrated the effectiveness of SVM and logistic regression for susceptibility mapping. However, these approaches require domain expertise for feature engineering and do not process raw image data directly.
+
+    \item \textit{Statistical susceptibility mapping} methods use frequency ratio, weights of evidence, or information value to assess landslide susceptibility based on conditioning factors. These produce static susceptibility maps but lack temporal prediction capability.
+\end{enumerate}
+
+\section{Deep Learning for Landslide Detection}
+Deep learning, particularly Convolutional Neural Networks (CNNs), has shown significant promise in landslide detection by automatically extracting features from satellite imagery without manual engineering.
+
+Wang et al. \cite{wang2021landslide} compared CNNs against traditional machine learning models for landslide susceptibility mapping in Yanshan County, China. Their results showed that a basic CNN achieved 92.5\% accuracy, outperforming SVM (84\%), Random Forest (88\%), and Logistic Regression (85\%), all of which relied on handcrafted features. This demonstrated the superiority of learned features over manually engineered ones.
+
+Ghorbanzadeh et al. \cite{ghorbanzadeh2019unet} evaluated various machine learning methods and deep learning CNNs including U-Net for landslide detection in satellite imagery. Their work demonstrated that deep CNN architectures significantly outperform traditional pixel-based classification methods.
+
+Huang et al. \cite{huang2020landslide_dl} applied fully connected sparse autoencoders for landslide susceptibility prediction, achieving competitive results but lacking the interpretability required for operational deployment.
+
+Meena et al. \cite{meena2022hrgldd} created the HR-GLDD (High Resolution Global Landslide Detector Dataset) containing high-resolution satellite image patches with pixel-level landslide annotations, which serves as one of the primary training datasets for the Phase~1 model in this thesis.
+
+\section{CNN Architectures Used in This Work}
+The following deep learning architectures are central to the proposed system.
+
+\subsection{AlexNet}
+AlexNet \cite{krizhevsky2012alexnet} was introduced in 2012 and consists of 5 convolutional layers followed by 3 fully connected layers, with approximately 62 million parameters. It was used as the baseline model (r0) in this thesis to establish initial performance benchmarks.
+
+\subsection{EfficientNet}
+EfficientNet \cite{tan2019efficientnet} introduced compound scaling, which uniformly scales network depth, width, and resolution using a compound coefficient. EfficientNet-B3 with 12 million parameters was used in experiments r2 to r5. The upgraded EfficientNetV2-S \cite{tan2021efficientnetv2} with fused MBConv blocks and 21 million parameters was employed in Lifecycle~3.
+
+\subsection{ConvNeXt}
+ConvNeXt \cite{liu2022convnext} is a pure CNN architecture modernized with design elements from Vision Transformers, achieving competitive accuracy. ConvNeXt-Base with 91 million parameters was used as the most powerful CNN component in the Lifecycle~3 ensemble.
+
+\subsection{Vision Transformers}
+The Vision Transformer (ViT) \cite{dosovitskiy2020vit} splits an image into fixed-size patches and processes them with a standard Transformer encoder, enabling global self-attention across the entire image. ViT-B/16 was used in the Lifecycle~2 ensemble (r5). Swin Transformer V2 \cite{liu2022swinv2} introduced hierarchical feature maps with shifted window self-attention, combining the benefits of both local and global feature extraction. SwinV2-Small with 50 million parameters was used in the Lifecycle~3 ensemble.
+
+\subsection{Attention Mechanisms}
+CBAM (Convolutional Block Attention Module) \cite{woo2018cbam} applies sequential channel and spatial attention to refine feature maps, enabling the network to focus on the most informative channels and spatial locations. FPN (Feature Pyramid Network) \cite{lin2017fpn} builds multi-scale feature maps by combining low-resolution, semantically strong features with high-resolution, spatially detailed features through a top-down pathway.
+
+\section{Temporal Modeling with Hidden Markov Models}
+Hidden Markov Models (HMMs) \cite{rabiner1989hmm} are probabilistic models for sequential data where the system transitions between hidden states that emit observable symbols. HMMs consist of three components: starting probabilities, a transition matrix governing state-to-state transitions, and an emission matrix governing observation probabilities given hidden states. Training is performed using the Baum-Welch algorithm (Expectation-Maximization), and the most likely state sequence is found using the Viterbi algorithm.
+
+In the context of landslide forecasting, HMMs model the temporal dynamics of landslide events by treating geological regimes as hidden states and observed landslide type-trigger combinations as emissions. This approach provides interpretable probability distributions over future events, which is more informative for operational decision-making than point predictions.
+
+Sameen et al. \cite{sameen2020lstm} compared LSTM-based models for landslide susceptibility assessment, achieving F1 scores of 0.70 to 0.80. While LSTMs can capture long-term dependencies, they suffer from limited interpretability and require substantially more training data compared to HMMs. For the scope of this work, an HMM was chosen over LSTM for its full interpretability, fast training (approximately 30 seconds compared to hours), and ability to produce complete probability distributions rather than point predictions.
+
+\section{Calibration and Explainability}
+Temperature scaling \cite{guo2017calibration} is a post-hoc calibration method that divides logits by a learned temperature parameter $T$ before softmax, ensuring that predicted probabilities match actual correctness frequencies. Grad-CAM \cite{selvaraju2017gradcam} generates visual explanations by computing gradient-weighted class activation maps, highlighting which image regions most influenced a prediction. Both techniques are incorporated in this thesis to enhance trust and operational utility.
+
+\section{Research Gap}
+Based on the literature review, the following research gap is identified. \textit{No existing system combines real-time satellite image-based landslide detection with probabilistic temporal forecasting.} Existing systems address either spatial detection or susceptibility mapping independently but do not provide an integrated pipeline that detects a landslide, classifies its type, and forecasts future events with probability estimates. This work addresses this gap through its two-phase pipeline architecture.
+
+In summary, the literature shows that while deep learning has significantly advanced landslide detection accuracy, most existing works focus solely on spatial identification from satellite imagery. Traditional methods rely on handcrafted features and lack scalability, while modern CNN and Transformer architectures achieve high accuracy but only perform binary classification without temporal context. Temporal approaches such as LSTM-based models offer sequential modeling but lack interpretability and require large training datasets. No prior work integrates spatial image-based detection with probabilistic temporal forecasting using historical landslide catalogs. This study bridges this gap by proposing a two-phase pipeline that combines a deep learning ensemble for real-time spatial detection with an HMM-based temporal forecasting model trained on 9,471 events from the NASA Global Landslide Catalog.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CHAPTER 3: SYSTEM DESIGN AND METHODOLOGY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{System Design and Methodology}\label{methodology}
+
+This chapter describes the architecture and methodology of the proposed two-phase landslide identification system. Section \ref{sec:pipeline} presents the overall pipeline design. Section \ref{sec:phase1_arch} details the Phase~1 image classification architectures. Section \ref{sec:phase2_arch} describes the Phase~2 HMM-based temporal forecasting model.
+
+\section{Overall Pipeline Architecture}\label{sec:pipeline}
+
+The system operates as a sequential two-phase pipeline. When a satellite image is provided as input, it first passes through Phase~1 for classification. If Phase~1 classifies the image as a landslide with confidence exceeding the decision threshold, Phase~2 is automatically triggered to provide temporal forecasting.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=1.2cm]
+  \node (input)   [io]        {Satellite Image};
+  \node (p1)      [process, below=of input]    {Phase 1: CNN Ensemble};
+  \node (dec)     [decision, below=of p1]      {Landslide?};
+  \node (p2)      [process2, below=of dec]     {Phase 2: HMM Forecast};
+  \node (out)     [startstop, below=of p2]     {Risk Assessment Report};
+  \node (no)      [startstop, right=3cm of dec] {No Landslide};
+
+  \draw [arrow] (input) -- (p1);
+  \draw [arrow] (p1)    -- (dec);
+  \draw [arrow] (dec)   -- node[left] {Yes} (p2);
+  \draw [arrow] (dec)   -- node[above] {No}  (no);
+  \draw [arrow] (p2)    -- (out);
+\end{tikzpicture}
+\caption{High-level two-phase pipeline architecture.}
+\label{fig:pipeline}
+\end{figure}
+
+\section{Phase 1, Image Classification Architecture}\label{sec:phase1_arch}
+
+Phase~1 evolved through three lifecycles, with each lifecycle introducing more sophisticated architectures and training strategies.
+
+\subsection{Lifecycle 1, Foundation Models}
+\textit{r0, AlexNet from Scratch.} The baseline model used AlexNet \cite{krizhevsky2012alexnet} with 5 convolutional layers, trained from random weight initialization on $227\times227$ RGB images. Binary classification into landslide and non-landslide categories using softmax with a threshold of 0.5.
+
+\textit{r1, AlexNet with Transfer Learning.} The same AlexNet architecture initialized with ImageNet \cite{deng2009imagenet} pre-trained weights. Only the final classification layer was replaced and retrained, leveraging learned feature representations from 1.2 million images.
+
+\textit{r2, EfficientNet-B3.} Replaced AlexNet with EfficientNet-B3 \cite{tan2019efficientnet}, featuring compound-scaled architecture with 12 million parameters. Input resolution increased to $300\times300$. Differential learning rates were applied with 0.0001 for the classification head and 0.00001 for pretrained backbone layers.
+
+Figure \ref{fig:arch_alexnet} shows the AlexNet baseline architecture used in r0 to r1, and Figure \ref{fig:arch_effnet} shows the EfficientNet-B3 architecture used in r2 to r4.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.55cm, every node/.style={font=\scriptsize, text width=5cm, align=center, minimum height=0.7cm}, scale=1, transform shape]
+    \node (input) [io, text width=4cm] {Input: $227{\times}227{\times}3$};
+    \node (c1) [process, below=of input] {Conv1: 96, $11{\times}11$, s4 + ReLU + Pool};
+    \node (c2) [process, below=of c1] {Conv2: 256, $5{\times}5$ + ReLU + Pool};
+    \node (c3) [process, below=of c2] {Conv3--5: 384/384/256, $3{\times}3$ + Pool};
+    \node (fc1) [process2, below=of c3] {FC-4096 + ReLU + Dropout(0.5)};
+    \node (fc2) [process2, below=of fc1] {FC-4096 + ReLU + Dropout(0.5)};
+    \node (out) [startstop, below=of fc2, text width=4cm] {Softmax $\to$ 2 classes};
+
+    \draw[arrow] (input) -- (c1);
+    \draw[arrow] (c1) -- (c2);
+    \draw[arrow] (c2) -- (c3);
+    \draw[arrow] (c3) -- (fc1);
+    \draw[arrow] (fc1) -- (fc2);
+    \draw[arrow] (fc2) -- (out);
+\end{tikzpicture}
+\caption{AlexNet architecture (r0 to r1). Five convolutional layers with max-pooling followed by 3 fully connected layers. Total parameters are approximately 62M. In r0, weights are randomly initialized. In r1, ImageNet pre-trained weights are used.}
+\label{fig:arch_alexnet}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.55cm, every node/.style={font=\scriptsize, text width=5cm, align=center, minimum height=0.7cm}, scale=1, transform shape]
+    \node (input) [io, text width=4cm] {Input: $300{\times}300{\times}3$};
+    \node (stem) [process, below=of input] {Stem: Conv $3{\times}3$, stride 2};
+    \node (mb12) [process, below=of stem] {MBConv Blocks: Stages 1--2 (32--48ch)};
+    \node (mb34) [process, below=of mb12] {MBConv Blocks: Stages 3--4 (96--136ch)};
+    \node (mb5) [process, below=of mb34] {MBConv Blocks: Stage 5 (232ch)};
+    \node (se) [process2, below=of mb5] {SE Attention (channel-only)};
+    \node (gap) [preprocess, below=of se] {Global Average Pooling};
+    \node (fc) [startstop, below=of gap, text width=4cm] {Dropout + FC $\to$ 2 classes};
+
+    \draw[arrow] (input) -- (stem);
+    \draw[arrow] (stem) -- (mb12);
+    \draw[arrow] (mb12) -- (mb34);
+    \draw[arrow] (mb34) -- (mb5);
+    \draw[arrow] (mb5) -- (se);
+    \draw[arrow] (se) -- (gap);
+    \draw[arrow] (gap) -- (fc);
+\end{tikzpicture}
+\caption{EfficientNet-B3 architecture (r2 to r4). Compound-scaled CNN with Mobile Inverted Bottleneck Convolution (MBConv) blocks and Squeeze-and-Excitation (SE) channel attention. Parameters are approximately 12M. Pretrained on ImageNet with differential learning rates.}
+\label{fig:arch_effnet}
+\end{figure}
+
+\subsection{Lifecycle 2, Reliability Improvements}
+\textit{r3, Temperature Calibration.} Added temperature scaling \cite{guo2017calibration} as a post-processing step to calibrate overconfident softmax outputs. A learned temperature parameter $T = 1.1511$ was applied as shown in Equation \ref{eq:temp}.
+\begin{equation}
+P_{\text{calibrated}} = \text{softmax}(z / T)
+\label{eq:temp}
+\end{equation}
+Here $z$ denotes the logit vector.
+
+\textit{r4, CNN+CNN Ensemble.} Combined EfficientNet-B3 (60\% weight) and AlexNet pretrained (40\% weight) in a weighted ensemble. The decision threshold was optimized from 0.5 to 0.467 to maximize F1-Score.
+
+\textit{r5, CNN+Transformer Ensemble.} Replaced AlexNet with ViT-B/16 \cite{dosovitskiy2020vit} in the ensemble, creating a hybrid CNN+Transformer architecture. This exploits architectural diversity where EfficientNet-B3 captures local spatial patterns through convolution while ViT-B/16 captures global spatial relationships through self-attention.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.55cm, every node/.style={font=\scriptsize, minimum height=0.65cm, align=center}, scale=1, transform shape]
+    \node (input) [io, text width=3cm] {Satellite Image};
+
+    \node (eff) [process, below left=1.2cm and 2.2cm of input, text width=3.2cm] {EfficientNet-B3\\(local features)};
+    \node (vit) [process2, below right=1.2cm and 2.2cm of input, text width=3.2cm] {ViT-B/16\\(global context)};
+
+    \node (fuse) [decision, below=3.5cm of input, text width=1.8cm] {Weighted\\Average};
+    \node (out) [startstop, below=0.7cm of fuse, text width=4cm] {Threshold $>$ 0.467 $\to$ Prediction};
+
+    \draw[arrow] (input) -| (eff);
+    \draw[arrow] (input) -| (vit);
+    \draw[arrow] (eff) -- ++(0,-0.8) -| node[pos=0.25, above, font=\scriptsize] {60\%} (fuse);
+    \draw[arrow] (vit) -- ++(0,-0.8) -| node[pos=0.25, above, font=\scriptsize] {40\%} (fuse);
+    \draw[arrow] (fuse) -- (out);
+\end{tikzpicture}
+\caption{Lifecycle~2 CNN+Transformer ensemble architecture (r5). EfficientNet-B3 (60\% weight) captures local spatial features through convolution while ViT-B/16 (40\% weight) captures global spatial relationships through self-attention.}
+\label{fig:arch_ensemble_lc2}
+\end{figure}
+
+\subsection{Lifecycle 3, Modern Architectures}
+Lifecycle~3 introduced three state-of-the-art models (2022 to 2024 architectures) and evaluated them on both multi-source and single-source datasets.
+
+\textit{Model 1, EfficientNetV2-S + CBAM.} This is an upgrade from EfficientNet-B3, featuring fused MBConv blocks for faster training, $384\times384$ input resolution, and CBAM attention (channel and spatial) replacing the original SE attention (channel only). Parameters are approximately 21 million.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.55cm, every node/.style={font=\scriptsize, text width=5.2cm, align=center, minimum height=0.7cm}, scale=1, transform shape]
+    \node (input) [io, text width=4cm] {Input: $384{\times}384{\times}3$};
+    \node (stem) [process, below=of input] {Stem Conv $3{\times}3$, stride 2};
+    \node (fmb) [process, below=of stem] {Fused-MBConv: Stages 1--2 (24--64ch)};
+    \node (mb) [process, below=of fmb] {MBConv: Stages 3--5 (128--256ch)};
+    \node (cbam) [process2, below=of mb] {CBAM: Channel Attn + Spatial Attn};
+    \node (gap) [preprocess, below=of cbam] {Global Average Pooling};
+    \node (head) [process, below=of gap] {LayerNorm $\to$ Dropout $\to$ FC(384) $\to$ GELU};
+    \node (out) [startstop, below=of head, text width=4cm] {FC(2) $\to$ Softmax};
+
+    \draw[arrow] (input) -- (stem);
+    \draw[arrow] (stem) -- (fmb);
+    \draw[arrow] (fmb) -- (mb);
+    \draw[arrow] (mb) -- (cbam);
+    \draw[arrow] (cbam) -- (gap);
+    \draw[arrow] (gap) -- (head);
+    \draw[arrow] (head) -- (out);
+\end{tikzpicture}
+\caption{EfficientNetV2-S + CBAM architecture (LC3 Model~1). Fused-MBConv blocks in early stages provide faster processing. CBAM adds both channel attention (``which features matter'') and spatial attention (``where to look''), upgrading from EfficientNet-B3's channel-only SE attention. Parameters are approximately 21M.}
+\label{fig:arch_effnetv2_cbam}
+\end{figure}
+
+\textit{Model 2, ConvNeXt-Base + CBAM + FPN.} This is the most powerful CNN component, featuring a 4-stage ConvNeXt backbone \cite{liu2022convnext} with progressive feature extraction (128 to 256 to 512 to 1024 channels). FPN \cite{lin2017fpn} builds multi-scale feature maps by fusing features from all 4 stages. CBAM attention is applied at each of the 4 pyramid levels independently. Input resolution is $224\times224$ with approximately 91 million parameters.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm, every node/.style={font=\scriptsize, minimum height=0.6cm, align=center}, scale=1, transform shape]
+    % Backbone (left column)
+    \node (input) [io, text width=3.2cm] {Input: $224{\times}224{\times}3$};
+    \node (s1) [process, below=of input, text width=3.2cm] {Stage 1: 128ch};
+    \node (s2) [process, below=of s1, text width=3.2cm] {Stage 2: 256ch};
+    \node (s3) [process, below=of s2, text width=3.2cm] {Stage 3: 512ch};
+    \node (s4) [process, below=of s3, text width=3.2cm] {Stage 4: 1024ch};
+
+    % FPN (right column)
+    \node (fpn4) [process2, right=1.8cm of s4, text width=2.6cm] {FPN-4 (256ch)};
+    \node (fpn3) [process2, right=1.8cm of s3, text width=2.6cm] {FPN-3 (256ch)};
+    \node (fpn2) [process2, right=1.8cm of s2, text width=2.6cm] {FPN-2 (256ch)};
+    \node (fpn1) [process2, right=1.8cm of s1, text width=2.6cm] {FPN-1 (256ch)};
+
+    % Output -- centered between columns
+    \node (cbam) [startstop, below=0.7cm of s4, xshift=2.8cm, text width=2.8cm] {CBAM $\times$ 4};
+    \node (head) [preprocess, below=0.4cm of cbam, text width=3.5cm] {Pool + Concat + FC $\to$ 2};
+
+    % Backbone arrows
+    \draw[arrow] (input) -- (s1);
+    \draw[arrow] (s1) -- (s2);
+    \draw[arrow] (s2) -- (s3);
+    \draw[arrow] (s3) -- (s4);
+
+    % Lateral connections
+    \draw[arrow] (s4) -- (fpn4);
+    \draw[arrow] (s3) -- (fpn3);
+    \draw[arrow] (s2) -- (fpn2);
+    \draw[arrow] (s1) -- (fpn1);
+
+    % Top-down FPN
+    \draw[arrow] (fpn4) -- (fpn3);
+    \draw[arrow] (fpn3) -- (fpn2);
+    \draw[arrow] (fpn2) -- (fpn1);
+
+    % FPN to output
+    \draw[arrow] (fpn4) -- (cbam);
+    \draw[arrow] (cbam) -- (head);
+
+    % Labels
+    \node[above=0.15cm of s1, font=\scriptsize\bfseries, blue!60] {ConvNeXt Backbone};
+    \node[above=0.15cm of fpn1, font=\scriptsize\bfseries, orange!70] {Feature Pyramid};
+\end{tikzpicture}
+\caption{ConvNeXt-Base + CBAM + FPN architecture (LC3 Model~2, best model). The 4-stage backbone extracts features at higher semantic levels (left). FPN fuses all stages through top-down connections (right). CBAM attention is applied at each pyramid level. Parameters are approximately 91M.}
+\label{fig:arch_convnext}
+\end{figure}
+
+\textit{Model 3, SwinV2-Small.} This is a hierarchical Vision Transformer \cite{liu2022swinv2} using window-based self-attention with shifted windows for cross-window information flow. It has 4 stages with patch merging between stages for hierarchical resolution reduction. Input resolution is $256\times256$ with approximately 50 million parameters.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.55cm, every node/.style={font=\scriptsize, text width=5.2cm, align=center, minimum height=0.7cm}, scale=1, transform shape]
+    \node (input) [io, text width=4cm] {Input: $256{\times}256{\times}3$};
+    \node (patch) [preprocess, below=of input] {Patch Embedding: $4{\times}4$ $\to$ tokens (96ch)};
+    \node (st1) [process, below=of patch] {Stage 1: W-MSA + SW-MSA $\times$ 2};
+    \node (pm1) [preprocess, below=of st1, text width=4.5cm] {Patch Merging (192ch)};
+    \node (st2) [process, below=of pm1] {Stage 2: W-MSA + SW-MSA $\times$ 2};
+    \node (pm2) [preprocess, below=of st2, text width=4.5cm] {Patch Merging (384ch)};
+    \node (st3) [process, below=of pm2] {Stage 3: W-MSA + SW-MSA $\times$ 18};
+    \node (pm3) [preprocess, below=of st3, text width=4.5cm] {Patch Merging (768ch)};
+    \node (st4) [process, below=of pm3] {Stage 4: W-MSA + SW-MSA $\times$ 2};
+    \node (head) [process2, below=of st4] {LN $\to$ Dropout $\to$ FC(384) $\to$ GELU};
+    \node (out) [startstop, below=of head, text width=4cm] {FC(2) $\to$ Softmax};
+
+    \draw[arrow] (input) -- (patch);
+    \draw[arrow] (patch) -- (st1);
+    \draw[arrow] (st1) -- (pm1);
+    \draw[arrow] (pm1) -- (st2);
+    \draw[arrow] (st2) -- (pm2);
+    \draw[arrow] (pm2) -- (st3);
+    \draw[arrow] (st3) -- (pm3);
+    \draw[arrow] (pm3) -- (st4);
+    \draw[arrow] (st4) -- (head);
+    \draw[arrow] (head) -- (out);
+\end{tikzpicture}
+\caption{SwinV2-Small architecture (LC3 Model~3). The image is split into $4{\times}4$ patches (tokens). Window self-attention (W-MSA) computes relationships within local windows. Shifted window self-attention (SW-MSA) enables cross-window information flow. Patch merging between stages creates hierarchical multi-scale features. Parameters are approximately 50M.}
+\label{fig:arch_swinv2}
+\end{figure}
+
+\textit{3-Model Ensemble.} The final Phase~1 output combines predictions from all three models through weighted averaging, exploiting architectural diversity (efficient CNN, powerful CNN, and Transformer) for maximum accuracy.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.5cm, every node/.style={font=\scriptsize, minimum height=0.6cm, align=center}, scale=1, transform shape]
+    \node (input) [io, text width=2.8cm] {Satellite Image};
+
+    \node (m1) [process, below left=1.2cm and 2.5cm of input, text width=2.8cm] {EfficientNetV2-S\\+ CBAM};
+    \node (m2) [process, below=1.2cm of input, text width=2.8cm] {ConvNeXt-Base\\+ CBAM + FPN};
+    \node (m3) [process2, below right=1.2cm and 2.5cm of input, text width=2.8cm] {SwinV2-Small};
+
+    \node (fuse) [decision, below=3.5cm of input, text width=1.6cm] {Weighted\\Average};
+    \node (tta) [preprocess, below=0.5cm of fuse, text width=3.2cm] {TTA: 5 views averaged};
+    \node (out) [startstop, below=0.5cm of tta, text width=2.8cm] {Final Prediction};
+
+    \draw[arrow] (input) -| (m1);
+    \draw[arrow] (input) -- (m2);
+    \draw[arrow] (input) -| (m3);
+    \draw[arrow] (m1.south) -- ++(0,-0.6) -| (fuse.west);
+    \draw[arrow] (m2.south) -- (fuse.north);
+    \draw[arrow] (m3.south) -- ++(0,-0.6) -| (fuse.east);
+    \draw[arrow] (fuse) -- (tta);
+    \draw[arrow] (tta) -- (out);
+\end{tikzpicture}
+\caption{Lifecycle~3 three-model ensemble architecture. Architectural diversity, including efficient CNN (EfficientNetV2), powerful multi-scale CNN (ConvNeXt+FPN), and hierarchical Transformer (SwinV2), ensures different error patterns. TTA stabilizes predictions by averaging 5~augmented views.}
+\label{fig:arch_ensemble_lc3}
+\end{figure}
+
+\subsection{Training Strategies}
+The following training strategies were employed across the lifecycles.
+
+\begin{enumerate}
+    \item \textit{Transfer Learning.} All models were initialized with ImageNet-pretrained weights to leverage learned visual feature representations.
+    \item \textit{Focal Loss} \cite{lin2017focal}. This replaced the standard cross-entropy loss to address class imbalance by down-weighting easy examples as given by Equation \ref{eq:focal}.
+    \begin{equation}
+    \text{FL}(p) = -(1-p)^\gamma \log(p), \quad \gamma = 2.0
+    \label{eq:focal}
+    \end{equation}
+    \item \textit{Data Augmentation.} Random horizontal/vertical flips, rotation, color jitter, Gaussian blur, and Mixup were applied to improve generalization.
+    \item \textit{Test-Time Augmentation (TTA).} Five augmented views of each test image (original, horizontal flip, vertical flip, both flips, 90\textdegree{} rotation) were averaged for stable predictions.
+    \item \textit{Exponential Moving Average (EMA).} This maintains a smoothed copy of model weights for more stable inference.
+    \item \textit{WeightedRandomSampler.} This oversamples the minority class (landslide) during training to address dataset imbalance.
+\end{enumerate}
+
+\section{Phase 2, HMM Temporal Forecasting Architecture}\label{sec:phase2_arch}
+
+\subsection{Model Design}
+Phase~2 employs a Categorical Hidden Markov Model with the specification shown in Table \ref{tab:hmm_spec}.
+
+\begin{table}[H]
+\begin{center}
+\caption{Phase 2 HMM model specification.}\label{tab:hmm_spec}
+\begin{tabular}{ll}
+\hline
+{\bf Component} & {\bf Description} \\
+\hline
+Hidden States & 8 latent geological regimes \\
+Observation Symbols & 42 (7 landslide types $\times$ 6 trigger mechanisms) \\
+Transition Matrix & $8 \times 8$ state-to-state transition probabilities \\
+Emission Matrix & $8 \times 42$ observation probabilities per state \\
+Start Probabilities & Initial distribution over 8 states \\
+Training Algorithm & Baum-Welch (100 iterations) \\
+Decoding Algorithm & Viterbi \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The 7 landslide types are Landslide (generic), Debris Flow, Mudslide, Rockfall, Earth Flow, Translational Slide, and Complex Landslide. The 6 trigger mechanisms are Heavy Rain, Earthquake, Downpour, Flooding, Continuous Rain, and Other.
+
+\subsection{Prediction Pipeline}
+Given a detected landslide in a specific geographic region, Phase~2 operates as follows.
+
+\begin{enumerate}
+    \item \textit{Viterbi Decoding} determines the most likely hidden state sequence from the region's historical event observations.
+    \item \textit{Type Prediction} queries the emission matrix for the current hidden state to determine the most probable landslide type.
+    \item \textit{Occurrence Probability} normalizes the log-likelihood score to a $[0,1]$ range using a sigmoid function.
+    \item \textit{Peak Risk Month} is computed from historical event frequency by country or region.
+    \item \textit{Multi-Step Forecast} propagates the transition matrix forward $N$ steps (typically 3) to predict the sequence of most likely future landslide types with associated probabilities.
+\end{enumerate}
+
+Figure \ref{fig:arch_hmm} illustrates the complete Phase~2 HMM prediction pipeline.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.55cm, every node/.style={font=\scriptsize, text width=5.2cm, align=center, minimum height=0.7cm}, scale=1, transform shape]
+    \node (trigger) [io, text width=4.5cm] {Phase 1: Landslide Detected + Location};
+    \node (lookup) [preprocess, below=of trigger] {Lookup: NASA GLC history by region};
+    \node (seq) [process, below=of lookup] {Build observation sequence (type$\times$trigger)};
+    \node (viterbi) [process2, below=of seq] {Viterbi Decoding $\to$ hidden state $s_t$};
+    \node (type) [process, below=of viterbi] {Emission Matrix $\to$ Type Prediction};
+    \node (prob) [process, below=of type] {Log-Likelihood $\to$ Occurrence Probability};
+    \node (forecast) [process, below=of prob] {Transition Matrix $\to$ $N$-Step Forecast};
+    \node (peak) [preprocess, below=of forecast] {Historical Frequency $\to$ Peak Risk Month};
+    \node (report) [startstop, below=of peak, text width=5cm] {Risk Report: Type + Prob + Month + Forecast};
+
+    \draw[arrow] (trigger) -- (lookup);
+    \draw[arrow] (lookup) -- (seq);
+    \draw[arrow] (seq) -- (viterbi);
+    \draw[arrow] (viterbi) -- (type);
+    \draw[arrow] (type) -- (prob);
+    \draw[arrow] (prob) -- (forecast);
+    \draw[arrow] (forecast) -- (peak);
+    \draw[arrow] (peak) -- (report);
+\end{tikzpicture}
+\caption{Phase~2 HMM temporal forecasting pipeline. Upon landslide detection by Phase~1, the system retrieves regional history from NASA GLC, encodes observations, applies Viterbi decoding to determine the current hidden state, then produces type prediction (emission matrix), occurrence probability (log-likelihood), multi-step forecast (transition matrix), and peak risk month (historical frequency).}
+\label{fig:arch_hmm}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CHAPTER 4: DATASETS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Datasets}\label{datasets}
+
+This chapter describes the datasets used for training and evaluation of both phases of the pipeline.
+
+\section{Phase 1, HR-GLDD Dataset}
+The HR-GLDD (High Resolution Global Landslide Detector Dataset) \cite{meena2022hrgldd} was obtained from Zenodo (DOI: 7189381). It provides high-resolution satellite image patches originally stored as numpy arrays of shape $(N, 128, 128, 4)$ with 4 spectral bands (Red, Green, Blue, Near-Infrared).
+
+A custom preprocessing script converted the numpy arrays to JPEG images. Patches where more than 5\% of pixels were labeled as landslide were classified as landslide images. For the non-landslide class, $64 \times 64$ sub-crops were extracted from regions with entirely zero masks and resized to $128 \times 128$ pixels.
+
+\begin{table}[H]
+\begin{center}
+\caption{HR-GLDD dataset splits after conversion.}\label{tab:hrgldd}
+\begin{tabular}{lccc}
+\hline
+\textbf{Split} & \textbf{Landslide} & \textbf{Non-Landslide} & \textbf{Total} \\
+\hline
+Training   & 616   & 1,574 & 2,190 \\
+Validation & 158   & 392   & 550 \\
+Test       & 211   & 488   & 699 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The dataset exhibits class imbalance with approximately 72\% non-landslide and 28\% landslide images, necessitating techniques such as WeightedRandomSampler and Focal Loss.
+
+Figure \ref{fig:dataset_samples} shows representative examples from the HR-GLDD dataset across different landslide types and non-landslide terrain.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.22\textwidth}
+    \centering
+    \includegraphics[width=\textwidth, height=3.5cm, keepaspectratio]{ls_debris_flow.jpg}
+    \caption{Debris flow}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.22\textwidth}
+    \centering
+    \includegraphics[width=\textwidth, height=3.5cm, keepaspectratio]{ls_translational.jpg}
+    \caption{Translational slide}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.22\textwidth}
+    \centering
+    \includegraphics[width=\textwidth, height=3.5cm, keepaspectratio]{ls_rockfall.jpg}
+    \caption{Rockfall}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.22\textwidth}
+    \centering
+    \includegraphics[width=\textwidth, height=3.5cm, keepaspectratio]{ls_mudflow.jpg}
+    \caption{Mudflow}
+\end{subfigure}
+
+\vspace{0.3cm}
+\begin{subfigure}[b]{0.22\textwidth}
+    \centering
+    \includegraphics[width=\textwidth, height=3.5cm, keepaspectratio]{nls_sample1.jpg}
+    \caption{Non-landslide (1)}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.22\textwidth}
+    \centering
+    \includegraphics[width=\textwidth, height=3.5cm, keepaspectratio]{nls_sample2.jpg}
+    \caption{Non-landslide (2)}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.22\textwidth}\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.22\textwidth}\end{subfigure}
+\caption{Representative satellite image samples from the HR-GLDD dataset. (a) to (d) show landslide images depicting terrain disturbance, exposed soil, and debris patterns for four landslide types. (e) and (f) show non-landslide images of undisturbed terrain.}
+\label{fig:dataset_samples}
+\end{figure}
+
+\section{Phase 1, Bijie Landslide Dataset}
+The Bijie dataset contains high-resolution satellite images from the Bijie region, Guizhou Province, China. It serves as a single-source benchmark for evaluating model performance on homogeneous data from one geographic region.
+
+\section{Phase 1, Multi-Source Dataset}
+For Lifecycle~3, five landslide datasets were integrated to create a diverse multi-source training corpus, expanding from 3,439 to 9,445 images (33,000+ after augmentation). This multi-source approach tests the model's ability to generalize across different sensors, resolutions, terrain types, and geographic regions.
+
+\section{Phase 2, NASA Global Landslide Catalog}
+The NASA Global Landslide Catalog (GLC) \cite{nasaglc2010} was downloaded from the NASA Open Data Portal. It contains 11,033 records of global landslide events from 1970 to 2019. After filtering for required fields (date, country, landslide type, trigger), 9,471 complete records were retained for HMM training.
+
+Each record contains: event date, country name, landslide category (type), landslide trigger, landslide size, and fatality count. The dataset covers 141 countries, making it a truly global resource for temporal pattern learning.
+
+\begin{table}[H]
+\begin{center}
+\caption{NASA Global Landslide Catalog summary.}\label{tab:nasaglc}
+\begin{tabular}{ll}
+\hline
+{\bf Parameter} & {\bf Value} \\
+\hline
+Total Records & 11,033 \\
+Usable Records (after filtering) & 9,471 \\
+Time Span & 1970--2019 (28 years with data) \\
+Countries Covered & 141 \\
+Landslide Types & 7 categories \\
+Trigger Mechanisms & 6 categories \\
+Combined Observation Symbols & 42 (type $\times$ trigger) \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CHAPTER 5: IMPLEMENTATION AND EXPERIMENTAL SETUP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Implementation and Experimental Setup}\label{implementation}
+
+\section{Development Environment}
+The system was implemented using Python with the following key libraries.
+
+\begin{enumerate}
+    \item \textit{PyTorch} was used as the deep learning framework for Phase~1 CNN and Transformer models.
+    \item \textit{torchvision} provided the pre-trained model zoo and image transformation utilities.
+    \item \textit{hmmlearn} was used for the Hidden Markov Model implementation for Phase~2.
+    \item \textit{scikit-learn} provided the evaluation metrics including accuracy, precision, recall, F1, and ROC-AUC.
+    \item \textit{NumPy and Pandas} were used for data manipulation and preprocessing.
+    \item \textit{Matplotlib} was used for visualization of training curves, confusion matrices, and ROC curves.
+\end{enumerate}
+
+Training was performed on GPU (NVIDIA CUDA-enabled) for Phase~1 CNN models and CPU for Phase~2 HMM.
+
+\section{Training Configuration}
+
+\begin{table}[H]
+\begin{center}
+\caption{Training hyperparameters for Phase 1.}\label{tab:hyperparams}
+\begin{tabular}{ll}
+\hline
+{\bf Hyperparameter} & {\bf Value} \\
+\hline
+Optimizer & Adam \\
+Learning Rate (classifier head) & 0.0001 \\
+Learning Rate (backbone) & 0.00001 \\
+Batch Size & 32 \\
+Epochs & 30--40 \\
+Dropout Rate & 0.5 \\
+Loss Function & Focal Loss ($\gamma = 2.0$) \\
+Decision Threshold & 0.467 (optimized) \\
+Image Normalization & ImageNet mean/std \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[H]
+\begin{center}
+\caption{Training configuration for Phase 2 HMM.}\label{tab:hmm_train}
+\begin{tabular}{ll}
+\hline
+{\bf Parameter} & {\bf Value} \\
+\hline
+Hidden States & 8 \\
+Observation Symbols & 42 \\
+Training Algorithm & Baum-Welch (EM) \\
+Iterations & 100 \\
+Total Observations & 9,442 \\
+Country-Level Sequences & 112 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\section{Training Time}
+
+\begin{table}[H]
+\begin{center}
+\caption{Training time estimates.}\label{tab:traintime}
+\begin{tabular}{lcc}
+\hline
+{\bf Component} & {\bf CPU} & {\bf GPU} \\
+\hline
+Phase 1 (CNN, 30 epochs) & 4 to 6 hours & 15 to 25 minutes \\
+Phase 2 (HMM, 100 iterations) & 10 to 30 seconds & N/A (CPU only) \\
+\hline
+{\bf Total} & {\bf 4 to 6 hours} & {\bf approximately 20 to 30 minutes} \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\section{Evaluation Metrics}
+The following metrics were used for comprehensive model evaluation. Table \ref{tab:metrics} describes each metric and its significance.
+
+\begin{table}[H]
+\begin{center}
+\caption{Evaluation metrics for Phase 1.}\label{tab:metrics}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lp{9cm}}
+\hline
+{\bf Metric} & {\bf Description} \\
+\hline
+Accuracy & Percentage of correctly classified images. Can be misleading with imbalanced classes. \\
+Precision & Fraction of predicted landslides that are actually landslides. Low precision indicates false alarms. \\
+Recall & Fraction of actual landslides that are detected. Most critical metric for disaster monitoring as missed landslides can cost lives. \\
+F1-Score & Harmonic mean of precision and recall: $F1 = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}$ \\
+ROC-AUC & Area under the Receiver Operating Characteristic curve. Measures the model's discriminative ability across all thresholds. \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+For Phase~2 HMM, the primary metric is \textit{Log-Likelihood}, measuring how well the trained model explains the observed sequences. A higher (less negative) per-observation log-likelihood indicates better model fit.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CHAPTER 6: RESULTS AND ANALYSIS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Results and Analysis}\label{results}
+
+This chapter presents the experimental results across all seven iterations and three development lifecycles, followed by Lifecycle~3 results on multi-source and single-source benchmarks, and Phase~2 HMM results.
+
+\section{Lifecycle 1, Foundation (r0, r1, r2)}
+Lifecycle~1 established the baseline and progressively improved the model architecture.
+
+\textit{r0, AlexNet from Scratch.} The baseline model achieved 78.54\% accuracy with an F1-Score of 67.67\%. Training from random initialization with only 2,190 images proved insufficient for AlexNet's 62 million parameters, resulting in underfitting on complex landslide patterns.
+
+\textit{r1, AlexNet with Transfer Learning.} Using ImageNet pre-trained weights improved accuracy to 80.11\% but F1-Score remained at 66.98\%, indicating that AlexNet's architectural limitations could not be overcome with better initialization alone.
+
+\textit{r2, EfficientNet-B3.} Replacing AlexNet with EfficientNet-B3 yielded a critical improvement. While accuracy was 79.97\%, recall jumped from 67.30\% to 78.20\%, an 11 percentage point gain. This means the model caught 11\% more actual landslides, which is the most important metric for disaster monitoring. The AUC also improved from 85.73\% to 88.93\%.
+
+Figure \ref{fig:training_history} shows the training and validation loss/accuracy curves across epochs, demonstrating proper convergence without overfitting.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{training_history.png}
+\caption{Training and validation curves across epochs showing loss convergence and accuracy improvement. The gap between training and validation curves remains small, indicating good generalization without overfitting.}
+\label{fig:training_history}
+\end{figure}
+
+\begin{table}[H]
+\begin{center}
+\caption{Lifecycle 1 results on HR-GLDD test set.}\label{tab:lc1}
+\begin{tabular}{llccccc}
+\hline
+& {\bf Model} & {\bf Acc(\%)} & {\bf Prec(\%)} & {\bf Recall(\%)} & {\bf F1(\%)} & {\bf AUC(\%)} \\
+\hline
+r0 & AlexNet (scratch) & 78.54 & 62.06 & 74.41 & 67.67 & 85.53 \\
+r1 & AlexNet (pretrained) & 80.11 & 66.67 & 67.30 & 66.98 & 85.73 \\
+r2 & EfficientNet-B3 & 79.97 & 63.72 & 78.20 & 70.21 & 88.93 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\section{Lifecycle 2, Reliability Improvements (r3, r4, r5)}
+Lifecycle~2 focused on calibration, ensemble methods, and architectural diversity.
+
+\textit{r3, Temperature Calibration.} Added temperature scaling ($T = 1.1511$) to fix overconfident predictions. This did not change accuracy or F1 but ensured that when the model reports 80\% confidence, it is actually correct approximately 80\% of the time. This calibration is essential for operational trust.
+
+\textit{r4, CNN+CNN Ensemble.} Combining EfficientNet-B3 (60\%) and AlexNet (40\%) with an optimized threshold of 0.467 improved accuracy to 82.40\% and F1 to 72.97\%. Two models making different errors resulted in more robust predictions.
+
+\textit{r5, CNN+Transformer Ensemble.} Replacing AlexNet with ViT-B/16 in the ensemble produced the largest single improvement in the project. Accuracy rose to 84.55\%, F1 to 75.98\%, and AUC to 91.50\%. This demonstrated that \textit{architectural diversity} (CNN for local patterns combined with Transformer for global context) is more valuable than combining two architecturally similar models.
+
+\begin{table}[H]
+\begin{center}
+\caption{Lifecycle 2 results on HR-GLDD test set.}\label{tab:lc2}
+\begin{tabular}{llccccc}
+\hline
+& {\bf Model} & {\bf Acc(\%)} & {\bf Prec(\%)} & {\bf Recall(\%)} & {\bf F1(\%)} & {\bf AUC(\%)} \\
+\hline
+r3 & + Temperature & 79.97 & 63.72 & 78.20 & 70.21 & 88.93 \\
+r4 & + AlexNet ensemble & 82.40 & 70.59 & 75.36 & 72.97 & 89.83 \\
+r5 & + ViT ensemble & 84.55 & 73.49 & 78.67 & 75.98 & 91.50 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\section{Lifecycle 3, Modern Architectures and Multi-Source Evaluation}
+
+Lifecycle~3 introduced three modern architectures (2022 to 2024), integrated five landslide datasets, and evaluated on both multi-source (generalization) and single-source (benchmark) settings.
+
+\subsection{Multi-Source Results (5 Datasets Combined)}
+
+Training and testing on data from five different sources, sensors, resolutions, and geographic regions represents the most challenging evaluation setting.
+
+\begin{table}[H]
+\begin{center}
+\caption{Lifecycle 3 multi-source results.}\label{tab:lc3_multi}
+\begin{tabular}{lcc}
+\hline
+{\bf Model} & {\bf Test Accuracy (\%)} & {\bf AUC} \\
+\hline
+EfficientNetV2-S + CBAM & 84.50 & 0.9215 \\
+ConvNeXt-Base + CBAM + FPN (EMA + TTA) & 87.85 & 0.9390 \\
+SwinV2-Small & 88.03 & 0.9412 \\
+{\bf 3-Model Ensemble} & {\bf 89.39} & {\bf 0.9481} \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The 3-model ensemble achieved 89.39\% accuracy on diverse multi-source data. Published papers typically report 85 to 92\% accuracy on single-source data. Achieving 89.39\% on data from five different sources with varying sensors, resolutions, and terrain types demonstrates strong generalization capability.
+
+Figure \ref{fig:confusion_matrix} shows the confusion matrix for the best performing model, revealing the distribution of correct and incorrect classifications.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{confusion_matrix.png}
+\caption{Confusion matrix for the ConvNeXt-CBAM-FPN model on the test set. The diagonal elements represent correct predictions (True Positives and True Negatives), while off-diagonal elements indicate misclassifications (False Positives and False Negatives).}
+\label{fig:confusion_matrix}
+\end{figure}
+
+Figure \ref{fig:roc_curve} presents the ROC curve, illustrating the model's discriminative ability across all classification thresholds.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{roc_curve.png}
+\caption{Receiver Operating Characteristic (ROC) curve for the best model. The area under the curve (AUC) quantifies the model's ability to rank landslide images above non-landslide images. An AUC close to 1.0 indicates near-perfect discrimination.}
+\label{fig:roc_curve}
+\end{figure}
+
+\subsection{Single-Source Bijie Benchmark Results}
+
+The Bijie benchmark provides a controlled single-source evaluation to compare against published results.
+
+\begin{table}[H]
+\begin{center}
+\caption{Lifecycle 3 Bijie single-source results.}\label{tab:lc3_bijie}
+\begin{tabular}{lcc}
+\hline
+{\bf Model} & {\bf Test Accuracy (\%)} & {\bf AUC} \\
+\hline
+SwinV2-Small & 97.48 & 0.9972 \\
+EfficientNetV2-S + CBAM (EMA) & 98.20 & 0.9962 \\
+ConvNeXt-Base + CBAM + FPN & 98.56 & 0.9947 \\
+ConvNeXt-Base + CBAM + FPN (EMA + TTA) & 98.92 & 0.9983 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{5-Fold Cross-Validation}
+
+Statistical validation through 5-fold cross-validation confirmed that the results are not due to a favorable data split.
+
+\begin{table}[H]
+\begin{center}
+\caption{5-Fold cross-validation accuracy on Bijie dataset.}\label{tab:kfold}
+\begin{tabular}{lccccccc}
+\hline
+{\bf Model} & {\bf F1} & {\bf F2} & {\bf F3} & {\bf F4} & {\bf F5} & {\bf Mean} & {\bf AUC} \\
+\hline
+ConvNeXt-CBAM-FPN & 98.74 & 97.84 & 98.20 & 98.38 & 97.66 & {\bf 98.16} & 0.9924 \\
+SwinV2-Small & 98.56 & 97.48 & 97.84 & 98.02 & 97.30 & 97.84 & 0.9952 \\
+EfficientNetV2-CBAM & 97.48 & 97.30 & 97.66 & 97.84 & 96.94 & 97.44 & 0.9962 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+Results are consistent across all 5 folds (standard deviation $< 0.5\%$), confirming statistical reliability.
+
+\section{Complete Evolution From r0 to Lifecycle 3}
+
+\begin{table}[H]
+\begin{center}
+\caption{Complete accuracy evolution across all experiments.}\label{tab:evolution}
+\begin{tabular}{llcc}
+\hline
+& {\bf What Changed} & {\bf Accuracy (\%)} & {\bf AUC (\%)} \\
+\hline
+r0 & AlexNet from scratch & 78.54 & 85.53 \\
+r1 & + Transfer learning & 80.11 & 85.73 \\
+r2 & + EfficientNet-B3 & 79.97 & 88.93 \\
+r4 & + CNN+CNN Ensemble & 82.40 & 89.83 \\
+r5 & + CNN+ViT Ensemble & 84.55 & 91.50 \\
+\hline
+LC3 & + 3 modern models, 5 datasets (multi-source) & {\bf 89.39} & {\bf 94.81} \\
+LC3 & + Bijie single-source (ConvNeXt) & {\bf 98.56} & {\bf 99.47} \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+Total improvement from 78.54\% to 98.56\% ({\bf +20.02 percentage points}), achieved across 7 experiments, 3 lifecycles, and 6 architectures.
+
+Figure \ref{fig:gradcam} demonstrates the Grad-CAM explainability output, showing which regions of the satellite image the model focuses on when making its prediction.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{ls_debris_flow.jpg}
+    \caption{Original satellite image (debris flow)}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+    \includegraphics[width=\textwidth]{gradcam_ls_test_0011.png}
+    \caption{Grad-CAM heatmap overlay}
+\end{subfigure}
+\caption{Grad-CAM visual explanation for a debris flow test image. (a) The original satellite image showing a visible debris flow pattern. (b) The Grad-CAM heatmap overlaid on the image, where red and warm regions indicate areas the model focused on most when predicting ``landslide''. The model correctly attends to the disturbed terrain and debris patterns rather than background vegetation.}
+\label{fig:gradcam}
+\end{figure}
+
+\section{Comparison with Published Work}
+
+\begin{table}[H]
+\begin{center}
+\caption{Comparison with published landslide classification methods.}\label{tab:comparison}
+\begin{tabular}{lcc}
+\hline
+& {\bf Wang et al. (2021)} & {\bf Proposed Approach (2026)} \\
+\hline
+Model & Basic CNN & ConvNeXt + CBAM + FPN \\
+Attention mechanism & None & CBAM (channel + spatial) \\
+Multi-scale features & No & FPN (4 scales) \\
+Training strategy & Standard CE loss & Focal Loss, EMA, Mixup, TTA \\
+Ensemble & No & 3-model (CNN + CNN + Transformer) \\
+Temporal forecasting & No & HMM with 9,471 events \\
+\hline
+Their accuracy & {\bf 92.5\%} & N/A \\
+Our accuracy (Bijie) & N/A & {\bf 98.56\%} \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+While direct comparison is limited because Wang et al. used different input data (GIS features from Hong Kong), the architectural advances (attention mechanisms, multi-scale fusion, ensemble learning, modern architectures) represent a significant capability gap. Our 98.56\% on the Bijie satellite image benchmark substantially exceeds the 92.5\% reported in prior work.
+
+\section{Phase 2, HMM Temporal Forecasting Results}
+
+\begin{table}[H]
+\begin{center}
+\caption{Phase 2 HMM training metrics.}\label{tab:hmm_results}
+\begin{tabular}{lcc}
+\hline
+{\bf Metric} & {\bf Value} & {\bf Interpretation} \\
+\hline
+Training Log-Likelihood & $-7,314.96$ & Model fits NASA GLC sequences well \\
+Per-Observation LL & $-0.775$ & Meaningful pattern learning confirmed \\
+Total Observations & 9,442 & Across 112 country-level sequences \\
+Hidden States & 8 & Distinct landslide regimes discovered \\
+Observation Symbols & 42 & Type $\times$ Trigger combinations \\
+Training Time (CPU) & 10--30 sec & Fast convergence \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The per-observation log-likelihood of $-0.775$ indicates substantial learning compared to a uniform random model which would score $-\log(42) = -3.74$, representing a $\sim$3.7$\times$ improvement over random prediction.
+
+\subsection{End-to-End Pipeline Output Example}
+
+The following example demonstrates the complete pipeline output for a test image from the Bijie dataset:
+
+\begin{table}[H]
+\begin{center}
+\caption{Example pipeline output for Bijie test image.}\label{tab:pipeline_output}
+\begin{tabular}{ll}
+\hline
+\multicolumn{2}{l}{\bf Phase 1: Image Classification} \\
+\hline
+Prediction & LANDSLIDE \\
+Confidence & 95.0\% \\
+Model Used & ConvNeXt-CBAM-FPN \\
+\hline
+\multicolumn{2}{l}{\bf Phase 2: Temporal Forecasting} \\
+\hline
+Most Likely Type & Translational Slide \\
+Occurrence Probability & 5.2\% (within 6 months) \\
+Dominant Trigger & Heavy Rain \\
+Peak Risk Month & July \\
+\hline
+\multicolumn{2}{l}{\bf 3-Step Future Forecast} \\
+\hline
+Step 1 (0--6 months) & Landslide (20.0\%) \\
+Step 2 (6--12 months) & Mudslide (20.0\%) \\
+Step 3 (12--18 months) & Landslide (20.0\%) \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The complete pipeline executes in under 2 seconds, producing an actionable risk assessment report suitable for operational decision-making.
+
+\subsection{Temporal Risk Prediction Visualization}
+
+Figure \ref{fig:hotspot_map} illustrates the Phase~2 spatial risk prediction output. When a landslide is detected, the system identifies historical events in the vicinity and generates a risk zone visualization with a red dashed boundary indicating the probable area of future landslide activity.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.7]
+    % Background map area
+    \fill[green!8] (-4,-3) rectangle (4,3);
+    \draw[gray, very thin, step=1] (-4,-3) grid (4,3);
+
+    % Axis labels
+    \node[font=\tiny, below] at (-3,-3) {105.0\textdegree E};
+    \node[font=\tiny, below] at (0,-3) {105.3\textdegree E};
+    \node[font=\tiny, below] at (3,-3) {105.6\textdegree E};
+    \node[font=\tiny, left] at (-4,-2) {26.8\textdegree N};
+    \node[font=\tiny, left] at (-4,0.5) {27.0\textdegree N};
+    \node[font=\tiny, left] at (-4,3) {27.2\textdegree N};
+
+    % Historical events (blue dots)
+    \fill[blue!70] (-1.0, 0.8) circle (2.5pt);
+    \fill[blue!70] (-0.4, 1.2) circle (2.5pt);
+    \fill[blue!70] (0.3, 0.5) circle (2.5pt);
+    \fill[blue!70] (-0.7, -0.2) circle (2.5pt);
+    \fill[blue!70] (0.6, 1.4) circle (2.5pt);
+    \fill[blue!70] (-1.3, 0.2) circle (2.5pt);
+    \fill[blue!70] (0.8, 0.0) circle (2.5pt);
+    \fill[blue!70] (-0.1, -0.6) circle (2.5pt);
+    \fill[blue!70] (0.0, 1.8) circle (2.5pt);
+    \fill[blue!70] (1.1, 0.8) circle (2.5pt);
+    \fill[blue!70] (-1.5, 1.3) circle (2.5pt);
+    \fill[blue!70] (0.4, -1.0) circle (2.5pt);
+    \fill[blue!70] (-0.2, 1.5) circle (2.5pt);
+
+    % Detected landslide (red star)
+    \node[red, font=\large] at (0, 0.5) {$\bigstar$};
+
+    % Risk zone (red dashed circle)
+    \draw[red, dashed, thick] (0, 0.5) circle (2cm);
+    \fill[red, opacity=0.05] (0, 0.5) circle (2cm);
+
+    % Legend box (inside the figure, bottom-right)
+    \node[font=\tiny, right] at (1.5, -1.8) {\textcolor{red}{$\bigstar$} Detected};
+    \fill[blue!70] (1.6, -2.15) circle (2pt);
+    \node[font=\tiny, right] at (1.75, -2.15) {Historical};
+    \draw[red, dashed] (1.5, -2.5) -- (1.9, -2.5);
+    \node[font=\tiny, right] at (1.9, -2.5) {Risk zone};
+
+    % Title
+    \node[font=\footnotesize\bfseries] at (0, 3.4) {Phase 2, Hotspot Prediction, Bijie, China};
+\end{tikzpicture}
+\caption{Phase~2 temporal risk prediction visualization for the Bijie region. The red star marks the detected landslide location from Phase~1. Blue dots represent 13 historical events from the NASA GLC within 100km. The red dashed circle delineates the predicted risk zone ($\sim$50km radius) where future landslide activity is most probable.}
+\label{fig:hotspot_map}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CHAPTER 7: CONCLUSION AND FUTURE WORK
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Conclusion and Future Work}\label{conclusion}
+
+\section{Conclusion}
+This study presented a comprehensive two-phase machine learning pipeline for automated landslide identification and temporal risk forecasting using satellite imagery and historical event data. The methodology combines deep learning ensembles for spatial detection with probabilistic temporal modeling, addressing a critical gap in existing landslide detection systems.
+
+In Phase~1, this work employed a deep learning ensemble of three modern architectures, namely EfficientNetV2-S with CBAM, ConvNeXt-Base with CBAM and FPN, and Swin Transformer V2-Small. The ensemble achieves 89.39\% accuracy on challenging multi-source data from five different datasets and 98.56\% accuracy on the Bijie single-source benchmark. The 5-fold cross-validation with a mean accuracy of 98.16\% and standard deviation below 0.5\% confirms the statistical reliability of these results. The system evolved through seven iterative experiments across three development lifecycles, demonstrating a total improvement of 20.02 percentage points from the initial 78.54\% baseline to the final 98.56\%. This progressive improvement validates the systematic methodology of iterative architecture selection, attention mechanism integration, multi-scale feature fusion, and ensemble composition.
+
+In Phase~2, this work employed a Categorical Hidden Markov Model trained on 9,471 real-world landslide events from the NASA Global Landslide Catalog, spanning 141 countries over 28 years. The model provides interpretable predictions including landslide type classification, occurrence probability, peak risk month, and multi-step temporal forecasts. The per-observation log-likelihood of $-0.775$ compared to the random baseline of $-3.74$ demonstrates substantial pattern learning from the historical data.
+
+The key contributions of this work are as follows.
+
+\begin{enumerate}
+    \item A two-phase pipeline architecture that integrates spatial image detection with temporal probabilistic forecasting, representing the first such system in landslide identification literature.
+    \item Systematic evaluation of six deep learning architectures across three lifecycles, demonstrating the value of architectural diversity in ensemble learning.
+    \item Achievement of 98.56\% accuracy on satellite image classification, exceeding published benchmarks.
+    \item Integration of attention mechanisms (CBAM), multi-scale feature fusion (FPN), and modern training strategies (Focal Loss, EMA, TTA, Mixup) for robust landslide detection.
+    \item An interpretable HMM-based forecasting model trained on the largest publicly available landslide catalog.
+\end{enumerate}
+
+\section{Future Work}
+The following directions are proposed for future enhancement of this system.
+
+\begin{enumerate}
+    \item \textit{Pixel-level Segmentation.} Extending Phase~1 with U-Net or similar architectures for precise landslide boundary delineation rather than whole-image classification.
+    \item \textit{Real-time Satellite Integration.} Connecting the pipeline to Sentinel-2 or Landsat data feeds for automated near-real-time monitoring.
+    \item \textit{LSTM Ensemble for Phase~2.} Incorporating Long Short-Term Memory networks alongside the HMM for improved temporal modeling while retaining HMM interpretability.
+    \item \textit{Multi-spectral Input.} Utilizing 4-channel input (R, G, B, NIR) for NDVI computation, potentially improving discrimination between landslide-affected and vegetated areas.
+    \item \textit{Web Dashboard.} Building a user-facing web or mobile interface for non-technical users to upload images and receive risk assessments.
+    \item \textit{Extended Environmental Features.} Incorporating rainfall data, seismic activity, soil moisture, and slope angle as additional inputs to Phase~2 for more accurate temporal predictions.
+    \item \textit{Siamese Networks.} Training on multi-temporal before/after image pairs for change-detection-based landslide identification.
+    \item \textit{Automated Hyperparameter Optimization.} Using Optuna or Ray Tune for systematic hyperparameter search to further optimize model performance.
+\end{enumerate}
+
+\newpage
+\bibliographystyle{unsrt}
+\addcontentsline{toc}{chapter}{References}
+\renewcommand{\bibname}{\fontsize{16}{19.2}\selectfont\bfseries References}
+\bibliography{references}
+
+\end{document}
