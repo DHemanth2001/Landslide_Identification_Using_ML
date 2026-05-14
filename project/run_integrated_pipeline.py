@@ -250,11 +250,11 @@ class IntegratedPipeline:
     def _visualize_hotspot(self, lat, lon, nearby_events, region_name):
         """Create SVG visualization of hotspot with red circle on China map."""
         try:
-            # China bounding box (rough)
+            # Local bounding box around hotspot (zoom in)
             map_width = 800
             map_height = 600
-            min_lat, max_lat = 18, 54
-            min_lon, max_lon = 73, 135
+            min_lat, max_lat = lat - 0.5, lat + 0.5
+            min_lon, max_lon = lon - 0.5, lon + 0.5
             
             # Scale function
             def scale_coords(latitude, longitude):
@@ -272,7 +272,7 @@ class IntegratedPipeline:
                 '  .hotspot { r: 15; fill: red; }',
                 '</style>',
                 f'<title>Landslide Risk Hotspot - {region_name}, China</title>',
-                f'<text x="50" y="30" class="title">Landslide Risk Hotspot — {region_name}, China</text>',
+                f'<text x="50" y="30" class="title">Landslide Risk Hotspot - {region_name}, China</text>',
                 f'<text x="50" y="50" class="label">Red star = Predicted Hotspot | Blue dots = Historical Events | Red dashed circle = Risk Zone</text>',
                 '',
                 '<!-- Map background -->',
@@ -282,15 +282,17 @@ class IntegratedPipeline:
             ]
             
             # Add grid lines
-            for lat_val in range(20, 55, 5):
+            lat_ticks = [min_lat + i * 0.2 for i in range(6)]
+            for lat_val in lat_ticks:
                 y = ((max_lat - lat_val) / (max_lat - min_lat)) * map_height + 70
                 svg_lines.append(f'<line x1="40" y1="{y}" x2="{map_width + 40}" y2="{y}" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>')
-                svg_lines.append(f'<text x="5" y="{y + 4}" class="label" font-size="10">{lat_val}°</text>')
+                svg_lines.append(f'<text x="5" y="{y + 4}" class="label" font-size="10">{lat_val:.1f}°</text>')
             
-            for lon_val in range(75, 135, 10):
+            lon_ticks = [min_lon + i * 0.2 for i in range(6)]
+            for lon_val in lon_ticks:
                 x = ((lon_val - min_lon) / (max_lon - min_lon)) * map_width + 40
                 svg_lines.append(f'<line x1="{x}" y1="70" x2="{x}" y2="{map_height + 70}" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>')
-                svg_lines.append(f'<text x="{x - 15}" y="{map_height + 90}" class="label" font-size="10">{lon_val}°</text>')
+                svg_lines.append(f'<text x="{x - 15}" y="{map_height + 90}" class="label" font-size="10">{lon_val:.1f}°</text>')
             
             svg_lines.append('')
             svg_lines.append('<!-- Historical events (blue dots) -->')
@@ -338,7 +340,7 @@ class IntegratedPipeline:
             os.makedirs(output_dir, exist_ok=True)
             output_path = os.path.join(output_dir, f"hotspot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.svg")
             
-            with open(output_path, 'w') as f:
+            with open(output_path, 'w', encoding='utf-8') as f:
                 f.write('\n'.join(svg_lines))
             
             print(f"[OK] SVG visualization saved: {output_path}\n")

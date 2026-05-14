@@ -6,7 +6,7 @@
   .hotspot { r: 15; fill: red; }
 </style>
 <title>Landslide Risk Hotspot - Bijie, China</title>
-<text x="50" y="30" class="title">Landslide Risk Hotspot — Bijie, China</text>
+<text x="50" y="30" class="title">Landslide Risk Hotspot - Bijie, China</text>
 <text x="50" y="50" class="label">Red star = Predicted Hotspot | Blue dots = Historical Events | Red dashed circle = Risk Zone</text>
 
 <!-- Map background -->
@@ -14,31 +14,31 @@
 
 <!-- Latitude/Longitude grid -->
 <line x1="40" y1="636.6666666666666" x2="840" y2="636.6666666666666" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="5" y="640.6666666666666" class="label" font-size="10">20°</text>
+<text x="5" y="640.6666666666666" class="label" font-size="10">20Â°</text>
 <line x1="40" y1="553.3333333333334" x2="840" y2="553.3333333333334" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="5" y="557.3333333333334" class="label" font-size="10">25°</text>
+<text x="5" y="557.3333333333334" class="label" font-size="10">25Â°</text>
 <line x1="40" y1="470.0" x2="840" y2="470.0" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="5" y="474.0" class="label" font-size="10">30°</text>
+<text x="5" y="474.0" class="label" font-size="10">30Â°</text>
 <line x1="40" y1="386.6666666666667" x2="840" y2="386.6666666666667" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="5" y="390.6666666666667" class="label" font-size="10">35°</text>
+<text x="5" y="390.6666666666667" class="label" font-size="10">35Â°</text>
 <line x1="40" y1="303.33333333333337" x2="840" y2="303.33333333333337" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="5" y="307.33333333333337" class="label" font-size="10">40°</text>
+<text x="5" y="307.33333333333337" class="label" font-size="10">40Â°</text>
 <line x1="40" y1="220.0" x2="840" y2="220.0" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="5" y="224.0" class="label" font-size="10">45°</text>
+<text x="5" y="224.0" class="label" font-size="10">45Â°</text>
 <line x1="40" y1="136.66666666666666" x2="840" y2="136.66666666666666" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="5" y="140.66666666666666" class="label" font-size="10">50°</text>
+<text x="5" y="140.66666666666666" class="label" font-size="10">50Â°</text>
 <line x1="65.80645161290323" y1="70" x2="65.80645161290323" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="50.80645161290323" y="690" class="label" font-size="10">75°</text>
+<text x="50.80645161290323" y="690" class="label" font-size="10">75Â°</text>
 <line x1="194.83870967741936" y1="70" x2="194.83870967741936" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="179.83870967741936" y="690" class="label" font-size="10">85°</text>
+<text x="179.83870967741936" y="690" class="label" font-size="10">85Â°</text>
 <line x1="323.8709677419355" y1="70" x2="323.8709677419355" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="308.8709677419355" y="690" class="label" font-size="10">95°</text>
+<text x="308.8709677419355" y="690" class="label" font-size="10">95Â°</text>
 <line x1="452.9032258064516" y1="70" x2="452.9032258064516" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="437.9032258064516" y="690" class="label" font-size="10">105°</text>
+<text x="437.9032258064516" y="690" class="label" font-size="10">105Â°</text>
 <line x1="581.9354838709677" y1="70" x2="581.9354838709677" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="566.9354838709677" y="690" class="label" font-size="10">115°</text>
+<text x="566.9354838709677" y="690" class="label" font-size="10">115Â°</text>
 <line x1="710.9677419354839" y1="70" x2="710.9677419354839" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
-<text x="695.9677419354839" y="690" class="label" font-size="10">125°</text>
+<text x="695.9677419354839" y="690" class="label" font-size="10">125Â°</text>
 
 <!-- Historical events (blue dots) -->
 <circle cx="457.61672516129033" cy="523.552601" class="event"/>

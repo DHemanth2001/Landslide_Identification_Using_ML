@@ -1,0 +1,413 @@
+<svg width="900" height="750" xmlns="http://www.w3.org/2000/svg">
+<style>
+  .title { font-size: 18px; font-weight: bold; fill: black; }
+  .label { font-size: 12px; fill: black; }
+  .event { r: 3; fill: blue; opacity: 0.6; }
+  .hotspot { r: 15; fill: red; }
+</style>
+<title>Landslide Risk Hotspot - Portland, USA, China</title>
+<text x="50" y="30" class="title">Landslide Risk Hotspot - Portland, USA, China</text>
+<text x="50" y="50" class="label">Red star = Predicted Hotspot | Blue dots = Historical Events | Red dashed circle = Risk Zone</text>
+
+<!-- Map background -->
+<rect x="40" y="70" width="800" height="600" fill="#e6f2ff" stroke="black" stroke-width="1"/>
+
+<!-- Latitude/Longitude grid -->
+<line x1="40" y1="670.0" x2="840" y2="670.0" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="674.0" class="label" font-size="10">45.0°</text>
+<line x1="40" y1="549.9999999999983" x2="840" y2="549.9999999999983" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="553.9999999999983" class="label" font-size="10">45.2°</text>
+<line x1="40" y1="430.00000000000085" x2="840" y2="430.00000000000085" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="434.00000000000085" class="label" font-size="10">45.4°</text>
+<line x1="40" y1="309.99999999999915" x2="840" y2="309.99999999999915" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="313.99999999999915" class="label" font-size="10">45.6°</text>
+<line x1="40" y1="190.0000000000017" x2="840" y2="190.0000000000017" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="194.0000000000017" class="label" font-size="10">45.8°</text>
+<line x1="40" y1="70.0" x2="840" y2="70.0" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="5" y="74.0" class="label" font-size="10">46.0°</text>
+<line x1="40.0" y1="70" x2="40.0" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="25.0" y="690" class="label" font-size="10">-123.2°</text>
+<line x1="200.00000000000227" y1="70" x2="200.00000000000227" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="185.00000000000227" y="690" class="label" font-size="10">-123.0°</text>
+<line x1="360.00000000000455" y1="70" x2="360.00000000000455" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="345.00000000000455" y="690" class="label" font-size="10">-122.8°</text>
+<line x1="519.9999999999955" y1="70" x2="519.9999999999955" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="504.99999999999545" y="690" class="label" font-size="10">-122.6°</text>
+<line x1="679.9999999999977" y1="70" x2="679.9999999999977" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="664.9999999999977" y="690" class="label" font-size="10">-122.4°</text>
+<line x1="840.0" y1="70" x2="840.0" y2="670" stroke="lightgray" stroke-width="0.5" stroke-dasharray="2,2"/>
+<text x="825.0" y="690" class="label" font-size="10">-122.2°</text>
+
+<!-- Historical events (blue dots) -->
+<circle cx="490.4000000000019" cy="430.00000000000085" class="event"/>
+<circle cx="366.55999999999494" cy="163.1800000000024" class="event"/>
+<circle cx="964.4799999999941" cy="455.8000000000004" class="event"/>
+<circle cx="484.7999999999979" cy="369.4000000000014" class="event"/>
+<circle cx="306.3999999999987" cy="16.000000000002217" class="event"/>
+<circle cx="293.59999999999445" cy="4.060000000002333" class="event"/>
+<circle cx="93.84000000000242" cy="541.9000000000023" class="event"/>
+<circle cx="319.200000000003" cy="84.94000000000142" class="event"/>
+<circle cx="-223.36000000000013" cy="907.6000000000005" class="event"/>
+<circle cx="440.14807999999675" cy="370.1596960000015" class="event"/>
+<circle cx="461.3600000000042" cy="372.46000000000066" class="event"/>
+<circle cx="629.5200000000045" cy="827.6200000000015" class="event"/>
+<circle cx="833.9200000000028" cy="856.0600000000034" class="event"/>
+<circle cx="891.0400000000004" cy="840.2800000000038" class="event"/>
+<circle cx="460.64000000000306" cy="372.7600000000021" class="event"/>
+<circle cx="965.4400000000032" cy="617.2000000000037" class="event"/>
+<circle cx="325.0400000000036" cy="93.04000000000173" class="event"/>
+<circle cx="411.4399999999955" cy="335.5600000000035" class="event"/>
+<circle cx="10.320000000003802" cy="47.80000000000058" class="event"/>
+<circle cx="401.9199999999978" cy="329.44000000000074" class="event"/>
+<circle cx="723.8399999999979" cy="364.1200000000009" class="event"/>
+<circle cx="34.32000000000471" cy="14.140000000000157" class="event"/>
+<circle cx="714.4799999999941" cy="785.9200000000027" class="event"/>
+<circle cx="1010.799999999997" cy="-147.31999999999658" class="event"/>
+<circle cx="38.79999999999427" cy="10.900000000003445" class="event"/>
+<circle cx="312.2399999999993" cy="64.96000000000322" class="event"/>
+<circle cx="733.8400000000001" cy="371.86000000000206" class="event"/>
+<circle cx="-245.36000000000286" cy="343.9000000000033" class="event"/>
+<circle cx="457.7262400000018" cy="269.0892580000036" class="event"/>
+<circle cx="974.559999999999" cy="629.8" class="event"/>
+<circle cx="481.7599999999993" cy="386.32000000000033" class="event"/>
+<circle cx="84.399999999996" cy="103.5400000000007" class="event"/>
+<circle cx="945.9200000000033" cy="593.8600000000006" class="event"/>
+<circle cx="470.7999999999993" cy="840.8200000000005" class="event"/>
+<circle cx="845.6799999999953" cy="561.7600000000007" class="event"/>
+<circle cx="318.6399999999958" cy="69.70000000000283" class="event"/>
+<circle cx="637.6800000000026" cy="827.9200000000028" class="event"/>
+<circle cx="-245.36000000000286" cy="343.9000000000033" class="event"/>
+<circle cx="-262.88000000000466" cy="536.8600000000013" class="event"/>
+<circle cx="404.7199999999998" cy="364.0000000000012" class="event"/>
+<circle cx="838.2399999999984" cy="554.6800000000002" class="event"/>
+<circle cx="452.3199999999997" cy="362.50000000000256" class="event"/>
+<circle cx="827.1999999999957" cy="548.6800000000014" class="event"/>
+<circle cx="1023.8399999999979" cy="867.5200000000001" class="event"/>
+<circle cx="958.7199999999962" cy="328.5400000000007" class="event"/>
+<circle cx="445.35999999999603" cy="363.2200000000009" class="event"/>
+<circle cx="90.2399999999966" cy="531.1600000000038" class="event"/>
+<circle cx="864.9599999999987" cy="566.0800000000035" class="event"/>
+<circle cx="28.160000000004857" cy="9.220000000003097" class="event"/>
+<circle cx="818.6399999999958" cy="362.98000000000144" class="event"/>
+<circle cx="724.7200000000043" cy="373.78000000000185" class="event"/>
+<circle cx="850.0800000000049" cy="862.4200000000013" class="event"/>
+<circle cx="440.2399999999966" cy="192.40000000000038" class="event"/>
+<circle cx="30.95999999999549" cy="252.58000000000294" class="event"/>
+<circle cx="-262.48000000000275" cy="382.06000000000387" class="event"/>
+<circle cx="688.2399999999984" cy="801.8200000000019" class="event"/>
+<circle cx="629.3599999999992" cy="827.6200000000015" class="event"/>
+<circle cx="955.039999999999" cy="599.6199999999999" class="event"/>
+<circle cx="-183.599999999999" cy="142.72000000000105" class="event"/>
+<circle cx="7.520000000001801" cy="12.220000000000368" class="event"/>
+<circle cx="234.7999999999979" cy="904.2399999999998" class="event"/>
+<circle cx="488.6400000000003" cy="365.3200000000024" class="event"/>
+<circle cx="-3.200000000001637" cy="900.640000000004" class="event"/>
+<circle cx="865.0400000000013" cy="331.3600000000005" class="event"/>
+<circle cx="135.75999999999567" cy="342.16000000000093" class="event"/>
+<circle cx="319.12000000000035" cy="84.8200000000017" class="event"/>
+<circle cx="199.19999999999845" cy="795.1600000000025" class="event"/>
+<circle cx="1070.1600000000008" cy="279.6400000000017" class="event"/>
+<circle cx="400.08000000000493" cy="116.80000000000177" class="event"/>
+<circle cx="67.76000000000067" cy="95.08000000000123" class="event"/>
+<circle cx="815.120000000004" cy="362.98000000000144" class="event"/>
+<circle cx="460.47999999999774" cy="372.8199999999998" class="event"/>
+<circle cx="1119.200000000003" cy="278.74000000000166" class="event"/>
+<circle cx="842.6399999999967" cy="862.6000000000031" class="event"/>
+<circle cx="941.5199999999936" cy="335.50000000000153" class="event"/>
+<circle cx="85.51999999999907" cy="156.82000000000016" class="event"/>
+<circle cx="494.9599999999941" cy="242.44000000000312" class="event"/>
+<circle cx="-200.08000000000038" cy="118.960000000001" class="event"/>
+<circle cx="500.4000000000042" cy="392.3200000000034" class="event"/>
+<circle cx="898.4799999999973" cy="337.7800000000005" class="event"/>
+<circle cx="826.4799999999946" cy="358.660000000003" class="event"/>
+<circle cx="405.9999999999968" cy="332.32000000000255" class="event"/>
+<circle cx="403.76000000000204" cy="340.83999999999975" class="event"/>
+<circle cx="1004.8000000000025" cy="867.5800000000021" class="event"/>
+<circle cx="-121.9199999999978" cy="901.840000000001" class="event"/>
+<circle cx="175.59999999999945" cy="729.0400000000031" class="event"/>
+<circle cx="920.7999999999993" cy="581.4400000000018" class="event"/>
+<circle cx="732.1600000000012" cy="372.2800000000032" class="event"/>
+<circle cx="401.6800000000012" cy="329.380000000003" class="event"/>
+<circle cx="454.23999999999523" cy="367.06000000000046" class="event"/>
+<circle cx="842.7199999999993" cy="862.6000000000031" class="event"/>
+<circle cx="433.119999999999" cy="348.52000000000317" class="event"/>
+<circle cx="453.5999999999967" cy="368.19999999999993" class="event"/>
+<circle cx="38.79999999999427" cy="10.900000000003445" class="event"/>
+<circle cx="-233.27999999999975" cy="548.1400000000006" class="event"/>
+<circle cx="443.2000000000039" cy="364.9000000000012" class="event"/>
+<circle cx="818.5600000000045" cy="362.98000000000144" class="event"/>
+<circle cx="878.2399999999961" cy="565.2400000000011" class="event"/>
+<circle cx="-223.27999999999747" cy="907.6000000000005" class="event"/>
+<circle cx="490.48000000000457" cy="436.24000000000336" class="event"/>
+<circle cx="-186.88000000000557" cy="121.60000000000338" class="event"/>
+<circle cx="838.2399999999984" cy="554.6800000000002" class="event"/>
+<circle cx="373.68000000000393" cy="311.0800000000009" class="event"/>
+<circle cx="557.2799999999938" cy="481.59999999999997" class="event"/>
+<circle cx="723.5199999999986" cy="360.8200000000022" class="event"/>
+<circle cx="-207.68000000000256" cy="143.8000000000028" class="event"/>
+<circle cx="325.0400000000036" cy="92.980000000004" class="event"/>
+<circle cx="745.759999999998" cy="502.0000000000036" class="event"/>
+<circle cx="-182.79999999999518" cy="134.4400000000033" class="event"/>
+<circle cx="32.71999999999707" cy="9.460000000002537" class="event"/>
+<circle cx="25.360000000002856" cy="65.20000000000266" class="event"/>
+<circle cx="1104.8000000000025" cy="262.4200000000013" class="event"/>
+<circle cx="319.12000000000035" cy="84.88000000000369" class="event"/>
+<circle cx="725.1999999999975" cy="372.34000000000094" class="event"/>
+<circle cx="179.12000000000262" cy="726.5200000000004" class="event"/>
+<circle cx="271.75999999999704" cy="496.12000000000023" class="event"/>
+<circle cx="14.639999999999418" cy="83.5600000000025" class="event"/>
+<circle cx="38.879999999996926" cy="10.900000000003445" class="event"/>
+<circle cx="455.5200000000036" cy="366.46000000000186" class="event"/>
+<circle cx="818.7199999999984" cy="362.98000000000144" class="event"/>
+<circle cx="457.72144000000253" cy="269.0815120000022" class="event"/>
+<circle cx="304.63999999999714" cy="45.82000000000306" class="event"/>
+<circle cx="319.12000000000035" cy="84.8200000000017" class="event"/>
+<circle cx="-147.52000000000635" cy="317.86" class="event"/>
+<circle cx="833.9200000000028" cy="856.0000000000014" class="event"/>
+<circle cx="509.2800000000034" cy="405.7600000000019" class="event"/>
+<circle cx="405.67999999999756" cy="332.0800000000031" class="event"/>
+<circle cx="526.7999999999938" cy="812.2600000000032" class="event"/>
+<circle cx="318.6399999999958" cy="69.70000000000283" class="event"/>
+<circle cx="-56.55999999999949" cy="10.06000000000114" class="event"/>
+<circle cx="621.0399999999959" cy="442.78000000000304" class="event"/>
+<circle cx="890.0" cy="576.4000000000008" class="event"/>
+<circle cx="585.8399999999983" cy="483.40000000000003" class="event"/>
+<circle cx="874.559999999999" cy="352.48000000000246" class="event"/>
+<circle cx="57.60000000000446" cy="20.200000000000955" class="event"/>
+<circle cx="316.6399999999976" cy="68.44000000000364" class="event"/>
+<circle cx="339.51999999999543" cy="290.980000000003" class="event"/>
+<circle cx="319.200000000003" cy="84.94000000000142" class="event"/>
+<circle cx="-106.47999999999683" cy="309.8800000000037" class="event"/>
+<circle cx="22.320000000004256" cy="57.340000000001794" class="event"/>
+<circle cx="835.2800000000025" cy="360.7600000000002" class="event"/>
+<circle cx="728.9599999999973" cy="464.86000000000274" class="event"/>
+<circle cx="599.0400000000045" cy="446.4400000000009" class="event"/>
+<circle cx="320.7999999999993" cy="333.8200000000012" class="event"/>
+<circle cx="841.3599999999997" cy="359.2600000000016" class="event"/>
+<circle cx="48.24000000000069" cy="13.720000000003267" class="event"/>
+<circle cx="732.0799999999986" cy="372.34000000000094" class="event"/>
+<circle cx="964.9599999999987" cy="328.78000000000014" class="event"/>
+<circle cx="405.91999999999416" cy="332.26000000000056" class="event"/>
+<circle cx="827.1999999999957" cy="851.4400000000035" class="event"/>
+<circle cx="924.960000000001" cy="335.68000000000325" class="event"/>
+<circle cx="820.8800000000019" cy="847.8400000000033" class="event"/>
+<circle cx="563.599999999999" cy="452.32" class="event"/>
+<circle cx="493.8400000000024" cy="399.94000000000057" class="event"/>
+<circle cx="687.9199999999992" cy="318.28000000000117" class="event"/>
+<circle cx="-222.72000000000162" cy="166.00000000000222" class="event"/>
+<circle cx="398.8799999999992" cy="342.8200000000015" class="event"/>
+<circle cx="7.359999999996489" cy="299.6800000000019" class="event"/>
+<circle cx="433.119999999999" cy="224.98000000000332" class="event"/>
+<circle cx="412.4799999999959" cy="336.34000000000384" class="event"/>
+<circle cx="72.2400000000016" cy="95.4400000000004" class="event"/>
+<circle cx="859.2000000000007" cy="818.8000000000028" class="event"/>
+<circle cx="-101.92000000000462" cy="217.3600000000019" class="event"/>
+<circle cx="613.4399999999937" cy="395.67999999999984" class="event"/>
+<circle cx="26.72000000000253" cy="80.0200000000001" class="event"/>
+<circle cx="411.51999999999816" cy="335.62000000000126" class="event"/>
+<circle cx="99.28000000000111" cy="614.0800000000024" class="event"/>
+<circle cx="455.03999999999905" cy="375.76000000000363" class="event"/>
+<circle cx="318.95999999999503" cy="84.63999999999999" class="event"/>
+<circle cx="60.799999999997" cy="247.66000000000162" class="event"/>
+<circle cx="425.5199999999968" cy="344.56000000000387" class="event"/>
+<circle cx="-245.36000000000286" cy="343.9000000000033" class="event"/>
+<circle cx="650.0000000000023" cy="444.5200000000011" class="event"/>
+<circle cx="-243.51999999999862" cy="894.8800000000003" class="event"/>
+<circle cx="842.7199999999993" cy="862.6000000000031" class="event"/>
+<circle cx="250.72000000000344" cy="467.6200000000006" class="event"/>
+<circle cx="426.5599999999972" cy="218.98000000000025" class="event"/>
+<circle cx="816.0800000000017" cy="363.10000000000116" class="event"/>
+<circle cx="637.7599999999939" cy="444.4600000000034" class="event"/>
+<circle cx="492.1600000000035" cy="380.9800000000021" class="event"/>
+<circle cx="-44.87999999999829" cy="292.84000000000077" class="event"/>
+<circle cx="-79.83999999999924" cy="307.8399999999999" class="event"/>
+<circle cx="-97.44000000000369" cy="794.4399999999998" class="event"/>
+<circle cx="758.4799999999996" cy="505.36" class="event"/>
+<circle cx="508.24000000000296" cy="818.3800000000017" class="event"/>
+<circle cx="637.7599999999939" cy="444.4600000000034" class="event"/>
+<circle cx="637.6800000000026" cy="827.9200000000028" class="event"/>
+<circle cx="108.16000000000031" cy="128.26000000000278" class="event"/>
+<circle cx="425.2800000000002" cy="690.3400000000016" class="event"/>
+<circle cx="106.63999999999533" cy="132.46000000000151" class="event"/>
+<circle cx="-59.44000000000415" cy="295.60000000000286" class="event"/>
+<circle cx="-40.88000000000193" cy="12.700000000003513" class="event"/>
+<circle cx="-245.36000000000286" cy="343.9000000000033" class="event"/>
+<circle cx="-245.2800000000002" cy="343.9000000000033" class="event"/>
+<circle cx="-245.4400000000055" cy="343.9000000000033" class="event"/>
+<circle cx="449.19999999999845" cy="261.1600000000021" class="event"/>
+<circle cx="-147.59999999999764" cy="317.86" class="event"/>
+<circle cx="471.4399999999978" cy="380.9800000000021" class="event"/>
+<circle cx="65.12000000000398" cy="95.92000000000354" class="event"/>
+<circle cx="499.7599999999943" cy="392.920000000002" class="event"/>
+<circle cx="483.43999999999824" cy="518.2600000000019" class="event"/>
+<circle cx="1076.6399999999999" cy="297.52000000000265" class="event"/>
+<circle cx="455.27999999999565" cy="375.22000000000276" class="event"/>
+<circle cx="412.40000000000464" cy="336.28000000000185" class="event"/>
+<circle cx="-39.359999999996944" cy="12.880000000000962" class="event"/>
+<circle cx="955.039999999999" cy="599.6199999999999" class="event"/>
+<circle cx="1041.9199999999955" cy="471.2800000000027" class="event"/>
+<circle cx="505.20000000000437" cy="759.4000000000005" class="event"/>
+<circle cx="65.04000000000133" cy="95.98000000000127" class="event"/>
+<circle cx="-56.55999999999949" cy="10.06000000000114" class="event"/>
+<circle cx="319.200000000003" cy="84.94000000000142" class="event"/>
+<circle cx="128.40000000000146" cy="742.4200000000039" class="event"/>
+<circle cx="65.12000000000398" cy="95.92000000000354" class="event"/>
+<circle cx="304.63999999999714" cy="45.82000000000306" class="event"/>
+<circle cx="287.5999999999999" cy="-41.11999999999682" class="event"/>
+<circle cx="-245.2800000000002" cy="343.9000000000033" class="event"/>
+<circle cx="460.5600000000004" cy="370.7200000000026" class="event"/>
+<circle cx="-258.4800000000064" cy="346.96000000000254" class="event"/>
+<circle cx="106.48000000000138" cy="140.6200000000038" class="event"/>
+<circle cx="478.40000000000146" cy="387.28000000000236" class="event"/>
+<circle cx="671.1199999999985" cy="320.3200000000007" class="event"/>
+<circle cx="350.2399999999989" cy="53.68000000000393" class="event"/>
+<circle cx="-87.76000000000067" cy="90.04000000000019" class="event"/>
+<circle cx="833.119999999999" cy="362.32000000000085" class="event"/>
+<circle cx="513.5199999999963" cy="476.44000000000347" class="event"/>
+<circle cx="325.0400000000036" cy="93.04000000000173" class="event"/>
+<circle cx="494.3999999999983" cy="424.5400000000029" class="event"/>
+<circle cx="-173.12000000000353" cy="644.3200000000002" class="event"/>
+<circle cx="302.1599999999944" cy="53.50000000000222" class="event"/>
+<circle cx="-260.8000000000038" cy="538.1200000000003" class="event"/>
+<circle cx="-245.2800000000002" cy="343.9000000000033" class="event"/>
+<circle cx="650.0000000000023" cy="444.5200000000011" class="event"/>
+<circle cx="-79.75999999999658" cy="307.7800000000022" class="event"/>
+<circle cx="72.32000000000426" cy="95.4400000000004" class="event"/>
+<circle cx="754.6399999999971" cy="512.5600000000003" class="event"/>
+<circle cx="445.0399999999968" cy="363.94000000000347" class="event"/>
+<circle cx="120.16000000000076" cy="-31.99999999999676" class="event"/>
+<circle cx="212.00000000000273" cy="181.2400000000008" class="event"/>
+<circle cx="824.4799999999964" cy="849.2200000000023" class="event"/>
+<circle cx="-28.799999999998818" cy="290.920000000001" class="event"/>
+<circle cx="320.39999999999736" cy="72.1000000000015" class="event"/>
+<circle cx="-166.79999999999836" cy="319.1800000000012" class="event"/>
+<circle cx="955.039999999999" cy="599.6199999999999" class="event"/>
+<circle cx="61.75999999999476" cy="237.22000000000037" class="event"/>
+<circle cx="405.67999999999756" cy="332.0200000000011" class="event"/>
+<circle cx="-124.4800000000032" cy="-14.539999999996951" class="event"/>
+<circle cx="347.03999999999496" cy="76.00000000000307" class="event"/>
+<circle cx="723.8399999999979" cy="364.1800000000029" class="event"/>
+<circle cx="457.73471999999856" cy="269.09543800000336" class="event"/>
+<circle cx="65.04000000000133" cy="95.98000000000127" class="event"/>
+<circle cx="473.9200000000005" cy="358.0000000000024" class="event"/>
+<circle cx="65.04000000000133" cy="95.98000000000127" class="event"/>
+<circle cx="401.6800000000012" cy="329.6800000000002" class="event"/>
+<circle cx="591.279999999997" cy="437.2600000000031" class="event"/>
+<circle cx="404.7199999999998" cy="364.7800000000015" class="event"/>
+<circle cx="927.1999999999957" cy="336.5200000000013" class="event"/>
+<circle cx="-127.92000000000371" cy="-19.939999999997156" class="event"/>
+<circle cx="92.16000000000349" cy="538.6000000000035" class="event"/>
+<circle cx="825.1199999999949" cy="358.1200000000021" class="event"/>
+<circle cx="-70.32000000000153" cy="7.060000000003868" class="event"/>
+<circle cx="7.679999999995744" cy="899.0800000000033" class="event"/>
+<circle cx="267.59999999999536" cy="742.1200000000024" class="event"/>
+<circle cx="427.99999999999955" cy="361.24000000000336" class="event"/>
+<circle cx="456.9599999999946" cy="365.74000000000353" class="event"/>
+<circle cx="399.19999999999845" cy="385.72000000000173" class="event"/>
+<circle cx="-232.7200000000039" cy="548.2000000000025" class="event"/>
+<circle cx="-223.27999999999747" cy="907.6600000000025" class="event"/>
+<circle cx="794.4800000000009" cy="831.1000000000018" class="event"/>
+<circle cx="-110.31999999999925" cy="-9.79999999999734" class="event"/>
+<circle cx="467.12000000000216" cy="524.6199999999999" class="event"/>
+<circle cx="176.87999999999647" cy="727.9000000000036" class="event"/>
+<circle cx="926.4799999999946" cy="335.4400000000038" class="event"/>
+<circle cx="648.4799999999973" cy="444.09999999999997" class="event"/>
+<circle cx="822.4799999999982" cy="360.34000000000333" class="event"/>
+<circle cx="284.88000000000056" cy="-45.679999999998984" class="event"/>
+<circle cx="-59.36000000000149" cy="295.5400000000009" class="event"/>
+<circle cx="383.43999999999824" cy="108.1600000000006" class="event"/>
+<circle cx="471.52000000000044" cy="374.9200000000013" class="event"/>
+<circle cx="582.4800000000005" cy="-130.99999999999625" class="event"/>
+<circle cx="325.0400000000036" cy="93.04000000000173" class="event"/>
+<circle cx="749.2800000000011" cy="546.8800000000012" class="event"/>
+<circle cx="-92.32000000000426" cy="311.9200000000032" class="event"/>
+<circle cx="214.95999999999867" cy="24.940000000000566" class="event"/>
+<circle cx="928.639999999998" cy="336.1600000000021" class="event"/>
+<circle cx="38.72000000000298" cy="10.900000000003445" class="event"/>
+<circle cx="-245.4400000000055" cy="343.9000000000033" class="event"/>
+<circle cx="637.6800000000026" cy="444.5200000000011" class="event"/>
+<circle cx="725.2800000000002" cy="372.34000000000094" class="event"/>
+<circle cx="558.4799999999996" cy="481.66000000000196" class="event"/>
+<circle cx="-47.999999999999545" cy="19.06000000000148" class="event"/>
+<circle cx="500.1599999999962" cy="259.7800000000032" class="event"/>
+<circle cx="-173.76000000000204" cy="320.38000000000267" class="event"/>
+<circle cx="319.12000000000035" cy="84.88000000000369" class="event"/>
+<circle cx="457.84000000000106" cy="375.88000000000335" class="event"/>
+<circle cx="52.87999999999556" cy="15.820000000000505" class="event"/>
+<circle cx="736.4799999999968" cy="371.3200000000012" class="event"/>
+<circle cx="366.8799999999942" cy="313.6600000000013" class="event"/>
+<circle cx="-106.55999999999949" cy="309.8800000000037" class="event"/>
+<circle cx="1100.6400000000008" cy="287.68" class="event"/>
+<circle cx="440.72000000000116" cy="254.2000000000013" class="event"/>
+<circle cx="725.5999999999995" cy="371.86000000000206" class="event"/>
+<circle cx="484.24000000000206" cy="429.6400000000017" class="event"/>
+<circle cx="322.56000000000085" cy="89.6200000000033" class="event"/>
+<circle cx="824.960000000001" cy="358.36000000000155" class="event"/>
+<circle cx="469.75999999999885" cy="382.48000000000076" class="event"/>
+<circle cx="674.1599999999971" cy="322.000000000001" class="event"/>
+<circle cx="250.72000000000344" cy="467.6200000000006" class="event"/>
+<circle cx="86.9600000000014" cy="105.69999999999993" class="event"/>
+<circle cx="411.4399999999955" cy="335.5600000000035" class="event"/>
+<circle cx="958.7199999999962" cy="328.6000000000027" class="event"/>
+<circle cx="437.04000000000406" cy="373.78000000000185" class="event"/>
+<circle cx="640.5599999999959" cy="443.56000000000336" class="event"/>
+<circle cx="730.8000000000015" cy="372.8800000000018" class="event"/>
+<circle cx="805.5200000000036" cy="841.8400000000003" class="event"/>
+<circle cx="135.11999999999716" cy="897.4000000000029" class="event"/>
+<circle cx="309.60000000000264" cy="-72.01999999999941" class="event"/>
+<circle cx="-242.32000000000426" cy="343.4800000000021" class="event"/>
+<circle cx="494.1600000000017" cy="424.9599999999998" class="event"/>
+<circle cx="682.5192799999991" cy="92.02282600000132" class="event"/>
+<circle cx="323.343519999994" cy="325.0658380000016" class="event"/>
+<circle cx="459.77871999999934" cy="373.256770000003" class="event"/>
+<circle cx="222.09895999999617" cy="21.93918400000399" class="event"/>
+<circle cx="181.0127999999986" cy="724.2466000000019" class="event"/>
+<circle cx="525.3321599999958" cy="475.59187600000257" class="event"/>
+<circle cx="430.0671999999986" cy="64.28680000000185" class="event"/>
+<circle cx="445.93295999999555" cy="359.17641400000065" class="event"/>
+<circle cx="447.54080000000386" cy="378.2308000000026" class="event"/>
+<circle cx="381.5541599999983" cy="107.52355600000072" class="event"/>
+<circle cx="373.8137599999982" cy="503.0896000000024" class="event"/>
+<circle cx="365.5471199999988" cy="315.6255760000033" class="event"/>
+<circle cx="913.0216000000041" cy="336.78340000000134" class="event"/>
+<circle cx="362.7616000000012" cy="304.4758000000013" class="event"/>
+<circle cx="252.43120000000317" cy="362.82280000000185" class="event"/>
+<circle cx="443.4432000000038" cy="369.6382000000011" class="event"/>
+<circle cx="-248.16640000000007" cy="330.4492000000022" class="event"/>
+<circle cx="432.95095999999603" cy="241.7789740000029" class="event"/>
+<circle cx="428.1079999999997" cy="132.66280000000108" class="event"/>
+<circle cx="391.40583999999535" cy="354.67402600000327" class="event"/>
+<circle cx="417.188799999999" cy="127.59400000000028" class="event"/>
+<circle cx="412.1712000000025" cy="121.34680000000316" class="event"/>
+<circle cx="104.12871999999652" cy="761.3805879999998" class="event"/>
+<circle cx="384.103199999995" cy="333.7144000000035" class="event"/>
+<circle cx="362.1931199999972" cy="328.21778800000317" class="event"/>
+<circle cx="548.8558400000011" cy="474.51647800000217" class="event"/>
+<circle cx="443.50879999999734" cy="256.7650000000012" class="event"/>
+<circle cx="731.6605600000025" cy="372.4072240000038" class="event"/>
+<circle cx="-113.43328000000156" cy="310.63532800000047" class="event"/>
+<circle cx="492.4734399999943" cy="63.07325800000115" class="event"/>
+<circle cx="382.4647199999981" cy="-156.15227000000004" class="event"/>
+<circle cx="1099.8483999999985" cy="304.62437200000323" class="event"/>
+<circle cx="370.92639999999847" cy="341.5744000000001" class="event"/>
+<circle cx="410.3175999999985" cy="355.4740000000021" class="event"/>
+<circle cx="388.0503999999996" cy="432.80980000000085" class="event"/>
+<circle cx="638.0825600000003" cy="444.34984000000355" class="event"/>
+<circle cx="552.875919999999" cy="468.4494340000026" class="event"/>
+<circle cx="453.16935999999487" cy="367.9451800000021" class="event"/>
+
+<!-- Predicted hotspot (red star) -->
+<polygon points="440.0,355.0 
+445.7,364.3 
+455.0,370.0 
+445.7,375.7 
+440.0,385.0 
+434.3,375.7 
+425.0,370.0 
+434.3,364.3" 
+fill="red" stroke="darkred" stroke-width="1"/>
+<circle cx="440.0" cy="370.0" r="360.36036036036035" 
+fill="none" stroke="red" stroke-width="2" stroke-dasharray="5,5"/>
+<text x="50" y="720" class="label">Hotspot Location: Lat 45.5200, Lon -122.7260</text>
+<text x="50" y="740" class="label">Historical events nearby: 356</text>
+</svg>
